@@ -1,13 +1,12 @@
 {% extends 'base.html' %}
 
-{% block title %}Advanced Search{% endblock %}
+{% block title %}Advanced Search Results{% endblock %}
 
 {% block content %}
-<div class="container mx-auto mt-10">
+<div class="container mx-auto mt-8">
     <h1 class="text-3xl font-semibold mb-10">Advanced Search</h1>
-    <form class="w-full max-w-lg" action="{% url 'advanced_search_results' %}" method="POST">
-        {% csrf_token %} <!-- Add CSRF token for security -->
-        <div class="mb-6">
+    <form class="w-full max-w-lg" action="{% url 'advanced_search_results' %}" method="GET">
+        <div class="mb-4">
             <label for="search-type" class="block text-gray-700 font-bold mb-2">Search for:</label>
             <select id="search-type" name="search_type" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
                 <option value="everything">Everything</option>
@@ -18,60 +17,58 @@
         </div>
 
         <div id="search-criteria">
-            <!-- Initial criteria field -->
-            <div class="grid grid-cols-6 gap-2 criteria">
-                <div class="col-span-1">
-                    <select name="field[]" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
-                        <option value="any_field">Any field</option>
-                        <option value="title">Title</option>
-                        <option value="author">Author</option>
-                        <option value="publisher">Publisher</option>
-                        <option value="ISBN">ISBN</option>
-                    </select>
-                </div>
-                <div class="col-span-1">
-                    <select name="operator[]" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
-                        <option value="contains">contains</option>
-                        <option value="does_not_contain">does not contain</option>
-                    </select>
-                </div>
-                <div class="col-span-2">
-                    <input type="text" name="search_term[]" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
-                </div>
-                <div class="col-span-1">
-                    <select name="logical_operator[]" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
-                        <option value="AND">AND</option>
-                        <option value="OR">OR</option>
-                        <option value="NOT">NOT</option>
-                    </select>
-                </div>
-                <div class="col-span-1 flex items-end mb-2">
-                    <button type="button" class="px-3 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-700 remove-criteria">Remove</button>
-                </div>
+            <!-- Initial criteria field with field, operator, and search term -->
+            <div class="criteria">
+                <label for="search-type" class="block text-gray-700 font-bold">Search Filters:</label>
+                <div id="search-criteria">
+                    <!-- Initial criteria field with field, operator, and search term -->
+                    <div class="criteria">
+                        <!-- Initial criteria field with field, operator, and search term -->
+                        <div class="criteria flex items-center py-2">
+                            <select name="logical_operator[]" class="w-18 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 hidden mr-2">
+                                <option value="AND">AND</option>
+                                <option value="OR">OR</option>
+                                <option value="NOT">NOT</option>
+                            </select>
+                    
+                            <!-- Add spacing between selects using margin-right classes -->
+                            <select name="field[]" class="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 mr-2">
+                                <option value="any_field">Any field</option>
+                                <option value="title">Title</option>
+                                <option value="author">Author</option>
+                                <option value="publisher">Publisher</option>
+                                <option value="ISBN">ISBN</option>
+                            </select>
+                    
+                            <select name="operator[]" class="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 mr-2">
+                                <option value="contains">contains</option>
+                            </select>
+                    
+                            <input type="text" name="search_term[]" class="flex-grow min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 mr-2">
+                            <button type="button" class="px-3 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-700 remove-criteria">Remove</button>
+                        </div>
+                    </div>
+                </div>                   
             </div>
         </div>
 
         <div class="mt-2">
-            <button type="button" class="px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-700 add-criteria">Add Criteria</button>
+            <button type="button" class="px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-700 add-criteria">Add Line</button>
         </div>
 
         <div class="mb-6">
-            <label class="block text-gray-700 font-bold mb-2 mt-8">Date Range:</label>
+            <label class="block text-gray-700 font-bold mb-2 mt-6">Date Range:</label>
             <div class="grid grid-cols-1 gap-2">
                 <div>
                     <label for="start-date" class="block text-gray-700 font-bold mb-2">Start Date:</label>
                     <div class="grid grid-cols-3 gap-2">
-                        <input type="text" id="start-day" name="start_day" placeholder="Day" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
-                        <input type="text" id="start-month" name="start_month" placeholder="Month" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
-                        <input type="text" id="start-year" name="start_year" placeholder="Year" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <input type="text" name="published_date_start" value="{{ published_date_start_filter }}" placeholder="YYYY-MM-DD" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400">
                     </div>
                 </div>
                 <div>
                     <label for="end-date" class="block text-gray-700 font-bold mb-2">End Date:</label>
                     <div class="grid grid-cols-3 gap-2">
-                        <input type="text" id="end-day" name="end_day" placeholder="Day" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
-                        <input type="text" id="end-month" name="end_month" placeholder="Month" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
-                        <input type="text" id="end-year" name="end_year" placeholder="Year" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <input type="text" name="published_date_end" value="{{ published_date_end_filter }}" placeholder="YYYY-MM-DD" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400">
                     </div>
                 </div>
             </div>
@@ -84,14 +81,25 @@
 </div>
 
 <script>
-    // Add criteria
+    // Maximum number of additional lines
+    const maxLines = 6;
+
     document.querySelector('.add-criteria').addEventListener('click', function () {
-        const criteria = document.querySelector('.criteria:last-child');
-        const newCriteria = criteria.cloneNode(true);
-        criteria.after(newCriteria);
-        newCriteria.querySelector('.remove-criteria').addEventListener('click', function () {
-            this.closest('.criteria').remove();
-        });
+        const criteria = document.querySelectorAll('.criteria');
+        
+        // Check if the maximum limit is reached
+        if (criteria.length < maxLines) {
+            const lastCriteria = criteria[criteria.length - 1];
+            const newCriteria = lastCriteria.cloneNode(true);
+            
+            // Show the logical operator for additional rows
+            newCriteria.querySelector('select[name="logical_operator[]"]').classList.remove('hidden');
+            
+            lastCriteria.after(newCriteria);
+            newCriteria.querySelector('.remove-criteria').addEventListener('click', function () {
+                this.closest('.criteria').remove();
+            });
+        }
     });
 </script>
 {% endblock %}

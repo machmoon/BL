@@ -82,56 +82,74 @@ def checkin(request):
 
     return render(request, 'checkin.html')
 
-def advanced_search_results(request):
-    # Get search parameters from the form
-    query = request.GET.get('q', '')
+from django.db.models import Q
+from django.views.generic import ListView
 
-    # Start with an empty filter query
-    filter_query = Q()
+class advanced_search_results(ListView):
+    model = Bookinventory  # Specify your model here
+    template_name = 'advanced_search_results.html'
+    context_object_name = 'results'
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        
+        # Extract search criteria from the form
+        search_type = self.request.GET.get('search_type')
+        field = self.request.GET.getlist('field[]')
+        operator = self.request.GET.getlist('operator[]')
+        search_term = self.request.GET.getlist('search_term[]')
+        logical_operator = self.request.GET.getlist('logical_operator[]')
+        
+        # Initialize an empty Q object to build dynamic queries
+        filter_query = Q()
 
-    if query:
-        # Apply search query to title, publisher, author, description, and ISBN
-        filter_query |= (Q(title__icontains=query) |
-                         Q(publisher__icontains=query) |
-                         Q(author__icontains=query) |
-                         Q(description__icontains=query) |
-                         Q(isbn__icontains=query))
+        if search_type in ['everything', 'catalog']:
+            for i in range(len(field)):
+                if field[i] == 'any_field':
+                    # Search all relevant fields
+                    sub_query = (
+                        Q(title__icontains=search_term[i]) |
+                        Q(author__icontains=search_term[i]) |
+                        Q(publisher__icontains=search_term[i]) |
+                        Q(isbn__icontains=search_term[i]) |
+                        Q(description__icontains=search_term[i])  # Include description field
+                    )
+                    filter_query |= sub_query
+                else:
+                    # Search a specific field using the selected operator
+                    sub_query = Q(**{f"{field[i]}__{operator[i]}": search_term[i]})
+                    filter_query |= sub_query
 
-    # Get published date filters
-    published_date_start_filter = request.GET.get('published_date_start', '')
-    published_date_end_filter = request.GET.get('published_date_end', '')
+        # Apply logical operators
+        if logical_operator:
+            for i in range(len(logical_operator)):
+                if logical_operator[i] == 'AND':
+                    filter_query &= Q()  # Apply AND logical operator
+                elif logical_operator[i] == 'OR':
+                    filter_query |= Q()  # Apply OR logical operator
+                elif logical_operator[i] == 'NOT':
+                    filter_query &= ~Q()  # Apply NOT logical operator
 
-    # Apply published date filters
-    if published_date_start_filter:
-        filter_query &= Q(published_date__gte=published_date_start_filter)
+        # Get published date filters
+        published_date_start_filter = self.request.GET.get('published_date_start', '')
+        published_date_end_filter = self.request.GET.get('published_date_end', '')
 
-    if published_date_end_filter:
-        filter_query &= Q(published_date__lte=published_date_end_filter)
+        # Apply published date filters
+        if published_date_start_filter:
+            filter_query &= Q(published_date__gte=published_date_start_filter)
 
-    # Get available quantity filter
-    available_quantity_filter = request.GET.get('available_quantity', '')
+        if published_date_end_filter:
+            filter_query &= Q(published_date__lte=published_date_end_filter)
 
-    # Apply available quantity filter
-    if available_quantity_filter:
-        filter_query &= Q(available_quantity=available_quantity_filter)
+        # Check if any search parameters are provided
+        if any([search_type, field, operator, search_term, logical_operator, published_date_start_filter, published_date_end_filter]):
+            # Apply the final filter_query to the queryset
+            queryset = queryset.filter(filter_query)
+        else:
+            # No search parameters provided, return an empty queryset
+            queryset = queryset.none()
 
-    # ... Additional logic for other advanced search parameters ...
-
-    # Filter the results based on the combined query
-    results = Bookinventory.objects.filter(filter_query)
-
-    # ... Additional logic for filtering by other advanced search parameters ...
-
-    # Prepare the context for rendering the results
-    context = {
-        'results': results,
-        'query': query,
-        'published_date_start_filter': published_date_start_filter,
-        'published_date_end_filter': published_date_end_filter,
-        'available_quantity_filter': available_quantity_filter,
-    }
-
-    return render(request, 'advanced_search_results.html', context)
+        return queryset
 
 from django.db.models import Q
 from datetime import datetime
@@ -176,21 +194,15 @@ def advanced_search(request):
             filter_query &= Q(isbn__icontains=isbn)
 
     # Get published date filters
-    start_day = request.GET.get('start_day', '')
-    start_month = request.GET.get('start_month', '')
-    start_year = request.GET.get('start_year', '')
-    end_day = request.GET.get('end_day', '')
-    end_month = request.GET.get('end_month', '')
-    end_year = request.GET.get('end_year', '')
+    published_date_start_filter = request.GET.get('published_date_start', '')
+    published_date_end_filter = request.GET.get('published_date_end', '')
 
     # Apply published date filters
-    if start_year and start_month and start_day:
-        start_date = f'{start_year}-{start_month}-{start_day}'
-        filter_query &= Q(published_date__gte=start_date)
+    if published_date_start_filter:
+        filter_query &= Q(published_date__gte=published_date_start_filter)
 
-    if end_year and end_month and end_day:
-        end_date = f'{end_year}-{end_month}-{end_day}'
-        filter_query &= Q(published_date__lte=end_date)
+    if published_date_end_filter:
+        filter_query &= Q(published_date__lte=published_date_end_filter)
 
     # ... Additional logic for other advanced search parameters ...
 

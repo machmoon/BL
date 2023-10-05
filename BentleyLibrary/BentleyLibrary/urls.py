@@ -28,8 +28,8 @@ urlpatterns = [
     path('resource.html', resource_view, name='resource'),
     path('checkout/<str:isbn>/', checkout, name='checkout'),
     path('checkin/', checkin, name='checkin'),
-    path('advanced_search/', advanced_search, name='advanced_search'),
-    path('advanced_search_results/', advanced_search_results, name='advanced_search_results'),
+    # path('advanced_search/', advanced_search, name='advanced_search'),
+    path('advanced_search_results/', advanced_search_results.as_view(), name='advanced_search_results'),
 
     # path('checkin.html', checkin, name='checkin'),
 

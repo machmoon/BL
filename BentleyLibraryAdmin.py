@@ -34,7 +34,10 @@ def getAuthor(ISBN):
         f"https://www.googleapis.com/books/v1/volumes?q=isbn:{ISBN}"
     )
     data = response.json()
-    author = data["items"][0]["volumeInfo"]["authors"]
+    try:
+        author = data["items"][0]["volumeInfo"]["authors"]
+    except:
+        author = ["Unknown"]
     authorString = list_to_string(author)
     return authorString
 
@@ -44,7 +47,10 @@ def getPub(ISBN):
         f"https://www.googleapis.com/books/v1/volumes?q=isbn:{ISBN}"
     )
     data = response.json()
-    pub = data["items"][0]["volumeInfo"]["publisher"]
+    try:
+        pub = data["items"][0]["volumeInfo"]["publisher"]
+    except:
+        pub = "Unknown"
     return pub
 
 
@@ -84,7 +90,10 @@ def getDes(ISBN):
         f"https://www.googleapis.com/books/v1/volumes?q=isbn:{ISBN}"
     )
     data = response.json()
-    des = data["items"][0]["volumeInfo"]["description"]
+    try:
+        des = data["items"][0]["volumeInfo"]["description"]
+    except:
+        des = "None"
     return des
 
 def getImg(ISBN):
@@ -92,7 +101,10 @@ def getImg(ISBN):
         f"https://www.googleapis.com/books/v1/volumes?q=isbn:{ISBN}"
     )
     data = response.json()
-    img = data["items"][0]["volumeInfo"]["imageLinks"]["thumbnail"]
+    try:
+        img = data["items"][0]["volumeInfo"]["imageLinks"]["thumbnail"]
+    except:
+        img = "https://www.google.com/url?sa=i&url=https%3A%2F%2Fen.m.wikipedia.org%2Fwiki%2FFile%3APlaceholder_book.svg&psig=AOvVaw0rpcntiVilGdXwo31ikPLC&ust=1696497214595000&source=images&cd=vfe&ved=0CBAQjRxqFwoTCIC4ieGG3IEDFQAAAAAdAAAAABAE"
     return img
 
 
