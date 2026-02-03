@@ -28,7 +28,10 @@ wheels/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
-/media
+/media/*
+!/media/README.md
+!/media/photos/README.md
+!/media/videos/README.md
 /staticfiles
 
 # Environment variables
