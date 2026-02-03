@@ -39,6 +39,3 @@ class Log(models.Model):
         
     def __str__(self):
         return self.title
-
-
-# from core.models import BookInventory
