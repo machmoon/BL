@@ -49,22 +49,33 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "BentleyLibrary.wsgi.application"
 
-DB_NAME = config('DB_NAME', default='BentleyLibrary')
-DB_USER = config('DB_USER', default='root')
-DB_PASSWORD = config('DB_PASSWORD', default='')
-DB_HOST = config('DB_HOST', default='localhost')
-DB_PORT = config('DB_PORT', default='3306')
+# Use SQLite for development if MySQL is not available
+USE_SQLITE = config('USE_SQLITE', default='True', cast=bool)
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': DB_NAME,
-        'USER': DB_USER,
-        'PASSWORD': DB_PASSWORD,
-        'HOST': DB_HOST,
-        'PORT': DB_PORT,
+if USE_SQLITE:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    DB_NAME = config('DB_NAME', default='BentleyLibrary')
+    DB_USER = config('DB_USER', default='root')
+    DB_PASSWORD = config('DB_PASSWORD', default='')
+    DB_HOST = config('DB_HOST', default='localhost')
+    DB_PORT = config('DB_PORT', default='3306')
+    
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': DB_NAME,
+            'USER': DB_USER,
+            'PASSWORD': DB_PASSWORD,
+            'HOST': DB_HOST,
+            'PORT': DB_PORT,
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {

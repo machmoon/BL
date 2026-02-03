@@ -28,3 +28,6 @@ This directory is for screenshots and photos of the BentleyLibrary application.
 - **Recommended Size**: 1920x1080 or similar
 - **File Size**: Keep under 2MB per image
 
+
+
+
