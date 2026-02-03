@@ -16,8 +16,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from core.views import index
-from core.views import search_results, book_page, resource_view, checkout, checkin, advanced_search, advanced_search_results
+from core.views import (
+    index, search_results, book_page, resource_view, 
+    checkout, checkin, advanced_search, AdvancedSearchResults
+)
 
 
 urlpatterns = [
@@ -29,7 +31,7 @@ urlpatterns = [
     path('checkout/<str:isbn>/', checkout, name='checkout'),
     path('checkin/', checkin, name='checkin'),
     # path('advanced_search/', advanced_search, name='advanced_search'),
-    path('advanced_search_results/', advanced_search_results.as_view(), name='advanced_search_results'),
+    path('advanced_search_results/', AdvancedSearchResults.as_view(), name='advanced_search_results'),
 
     # path('checkin.html', checkin, name='checkin'),
 
