@@ -1,17 +1,23 @@
 import logging
 from datetime import timedelta
 import json
+from urllib.parse import urlencode
 
 from django.contrib import messages
+from django.contrib.auth import get_user_model, login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import LoginView
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.core.validators import validate_email
 from django.db import transaction
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils import timezone
 from django.views.generic import ListView
+from django.conf import settings
 
 from .ai import fallback_concierge
 from .discovery.pipeline import run_search_pipeline
@@ -42,6 +48,8 @@ RESOURCE_TEMPLATE = "core/resource.html"
 ADVANCED_SEARCH_TEMPLATE = "core/advanced_search_results.html"
 ACCOUNT_TEMPLATE = "core/account.html"
 INDEX_TEMPLATE = "core/index.html"
+AUTH0_PROVIDER_SESSION_KEY = "auth_provider"
+AUTH0_NEXT_SESSION_KEY = "auth0_next_url"
 
 ADVANCED_SEARCH_FIELDS = {
     "any_field": "any_field",
@@ -65,6 +73,199 @@ ADVANCED_SEARCH_OPERATORS = {
     "iendswith",
 }
 LOAN_PERIOD_DAYS = 21
+
+
+def auth0_is_enabled():
+    return bool(getattr(settings, "AUTH0_ENABLED", False))
+
+
+def build_auth0_client():
+    if not auth0_is_enabled():
+        return None
+
+    try:
+        from authlib.integrations.django_client import OAuth
+    except ImportError as exc:
+        raise RuntimeError(
+            "Auth0 support requires Authlib. Install dependencies from requirements.txt."
+        ) from exc
+
+    oauth = OAuth()
+    client_kwargs = {
+        "scope": settings.AUTH0_SCOPES,
+        "code_challenge_method": "S256",
+    }
+    if settings.AUTH0_AUDIENCE:
+        client_kwargs["audience"] = settings.AUTH0_AUDIENCE
+
+    oauth.register(
+        name="auth0",
+        client_id=settings.AUTH0_CLIENT_ID,
+        client_secret=settings.AUTH0_CLIENT_SECRET or None,
+        server_metadata_url=f"{settings.AUTH0_DOMAIN}/.well-known/openid-configuration",
+        client_kwargs=client_kwargs,
+    )
+    return oauth.create_client("auth0")
+
+
+def _auth0_logout_redirect(request):
+    return_to = (
+        settings.AUTH0_LOGOUT_REDIRECT_URL
+        or request.build_absolute_uri(reverse("index"))
+    )
+    query = urlencode(
+        {
+            "client_id": settings.AUTH0_CLIENT_ID,
+            "returnTo": return_to,
+        }
+    )
+    return f"{settings.AUTH0_DOMAIN}/v2/logout?{query}"
+
+
+def _clean_next_url(request, raw_next):
+    next_url = (raw_next or "").strip()
+    if not next_url:
+        return ""
+    if url_has_allowed_host_and_scheme(
+        next_url,
+        allowed_hosts=set(settings.ALLOWED_HOSTS),
+        require_https=request.is_secure(),
+    ):
+        return next_url
+    return ""
+
+
+def _build_local_username(email, sub):
+    if email:
+        base = email.split("@", 1)[0][:120] or "bentley"
+    elif sub:
+        base = sub.replace("|", "_")[:120] or "bentley"
+    else:
+        base = "bentley"
+    return base
+
+
+def _resolve_or_create_auth0_user(userinfo):
+    User = get_user_model()
+    email = (userinfo.get("email") or "").strip().lower()
+    sub = (userinfo.get("sub") or "").strip()
+    first_name = (userinfo.get("given_name") or "").strip()
+    last_name = (userinfo.get("family_name") or "").strip()
+    full_name = (userinfo.get("name") or "").strip()
+    nickname = (userinfo.get("nickname") or "").strip()
+
+    user = None
+    if email:
+        user = User.objects.filter(email__iexact=email).first()
+
+    if not user:
+        base_username = _build_local_username(email, sub)
+        username = base_username
+        suffix = 1
+        while User.objects.filter(username=username).exists():
+            username = f"{base_username[:140]}-{suffix}"
+            suffix += 1
+
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+        )
+        user.set_unusable_password()
+        user.save(update_fields=["password"])
+
+    updated_fields = []
+    if email and user.email != email:
+        user.email = email
+        updated_fields.append("email")
+    if first_name and user.first_name != first_name:
+        user.first_name = first_name
+        updated_fields.append("first_name")
+    if last_name and user.last_name != last_name:
+        user.last_name = last_name
+        updated_fields.append("last_name")
+    if not user.first_name and full_name:
+        parts = full_name.split()
+        user.first_name = parts[0]
+        updated_fields.append("first_name")
+        if len(parts) > 1 and not user.last_name:
+            user.last_name = " ".join(parts[1:])
+            updated_fields.append("last_name")
+    if not user.first_name and nickname:
+        user.first_name = nickname
+        updated_fields.append("first_name")
+    if updated_fields:
+        user.save(update_fields=sorted(set(updated_fields)))
+
+    profile = getattr(user, "library_profile", None)
+    if profile:
+        email_verified = bool(userinfo.get("email_verified"))
+        if profile.is_email_verified != email_verified:
+            profile.is_email_verified = email_verified
+            profile.save(update_fields=["is_email_verified"])
+
+    return user
+
+
+class BentleyLoginView(LoginView):
+    template_name = "registration/login.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["auth0_enabled"] = auth0_is_enabled()
+        return context
+
+
+def auth0_login(request):
+    if not auth0_is_enabled():
+        messages.error(request, "Auth0 login is not configured for this environment.")
+        return redirect("login")
+
+    client = build_auth0_client()
+    next_url = _clean_next_url(request, request.GET.get("next", ""))
+    if next_url:
+        request.session[AUTH0_NEXT_SESSION_KEY] = next_url
+
+    redirect_uri = request.build_absolute_uri(reverse("auth0_callback"))
+    return client.authorize_redirect(request, redirect_uri)
+
+
+def auth0_callback(request):
+    if not auth0_is_enabled():
+        return redirect("login")
+
+    try:
+        client = build_auth0_client()
+        token = client.authorize_access_token(request)
+        userinfo = token.get("userinfo") or client.userinfo(token=token)
+        user = _resolve_or_create_auth0_user(userinfo)
+        auth_login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+        request.session[AUTH0_PROVIDER_SESSION_KEY] = "auth0"
+        log_product_event(
+            "auth0_login_completed",
+            request=request,
+            metadata={
+                "email_verified": bool(userinfo.get("email_verified")),
+            },
+        )
+        messages.success(request, "Welcome back to Bentley Library.")
+    except Exception as exc:
+        logger.exception("Auth0 callback failed: %s", exc)
+        messages.error(request, "We couldn't complete Auth0 sign-in. Please try again.")
+        return redirect("login")
+
+    next_url = _clean_next_url(request, request.session.pop(AUTH0_NEXT_SESSION_KEY, ""))
+    next_url = next_url or settings.LOGIN_REDIRECT_URL
+    return redirect(next_url)
+
+
+def logout_view(request):
+    provider = request.session.get(AUTH0_PROVIDER_SESSION_KEY)
+    auth_logout(request)
+    if provider == "auth0" and auth0_is_enabled():
+        return redirect(_auth0_logout_redirect(request))
+    return redirect(settings.LOGOUT_REDIRECT_URL)
 
 def extract_user_identity(request):
     first_name = request.POST.get("first_name", "").strip()

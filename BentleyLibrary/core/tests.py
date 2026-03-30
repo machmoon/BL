@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
+from django.http import HttpResponseRedirect
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -525,3 +526,62 @@ class ManagementCommandTests(TestCase):
 
         self.assertIn("recall@5=", output)
         self.assertIn("precision@3=", output)
+
+
+class Auth0Tests(TestCase):
+    def test_login_page_shows_auth0_entry_when_enabled(self):
+        response = self.client.get(
+            reverse("login"),
+            **{},
+        )
+        self.assertEqual(response.status_code, 200)
+
+        with self.settings(AUTH0_ENABLED=True):
+            response = self.client.get(reverse("login"))
+            self.assertContains(response, "Continue with Auth0")
+
+    @override_settings(AUTH0_ENABLED=False)
+    def test_auth0_login_redirects_to_local_login_when_disabled(self):
+        response = self.client.get(reverse("auth0_login"), follow=True)
+
+        self.assertRedirects(response, reverse("login"))
+        messages = list(response.context["messages"])
+        self.assertTrue(any("Auth0 login is not configured" in str(message) for message in messages))
+
+    @override_settings(AUTH0_ENABLED=True)
+    @patch("core.views.build_auth0_client")
+    def test_auth0_login_ignores_unsafe_next_url(self, build_auth0_client):
+        mock_client = build_auth0_client.return_value
+        mock_client.authorize_redirect.return_value = HttpResponseRedirect("/")
+
+        response = self.client.get(
+            reverse("auth0_login"),
+            {"next": "https://evil.example.com/phish"},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertNotIn("auth0_next_url", self.client.session)
+
+    @override_settings(AUTH0_ENABLED=True)
+    @patch("core.views.build_auth0_client")
+    def test_auth0_callback_logs_user_in(self, build_auth0_client):
+        mock_client = build_auth0_client.return_value
+        mock_client.authorize_access_token.return_value = {
+            "userinfo": {
+                "sub": "auth0|123",
+                "email": "student@example.com",
+                "email_verified": True,
+                "given_name": "Student",
+                "family_name": "Example",
+            }
+        }
+
+        response = self.client.get(reverse("auth0_callback"))
+
+        self.assertRedirects(response, reverse("account_overview"))
+        user = get_user_model().objects.get(email="student@example.com")
+        self.assertEqual(int(self.client.session["_auth_user_id"]), user.id)
+        self.assertEqual(user.library_profile.is_email_verified, True)
+        self.assertTrue(
+            ProductEvent.objects.filter(event_type="auth0_login_completed").exists()
+        )

@@ -25,6 +25,18 @@
     <div class="rounded-[2rem] shell-panel p-8 shadow-sm">
         <p class="section-kicker">Authentication</p>
         <h2 class="mt-2 font-serif text-4xl text-midnight">Log in</h2>
+        {% if auth0_enabled %}
+        <div class="mt-8 space-y-4">
+            <a href="{% url 'auth0_login' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}" class="primary-button flex w-full items-center justify-center">
+                Continue with Auth0
+            </a>
+            <div class="flex items-center gap-3 text-xs uppercase tracking-[0.25em] text-midnight/35">
+                <span class="h-px flex-1 bg-black/10"></span>
+                <span>or use a local account</span>
+                <span class="h-px flex-1 bg-black/10"></span>
+            </div>
+        </div>
+        {% endif %}
         <form method="post" class="mt-8 space-y-4">
             {% csrf_token %}
             {{ form.as_p }}

@@ -1,3 +1,5 @@
+from django.conf import settings
+
 from .models import LibraryRole
 from .presenters.books import ROLE_MANAGE_LOANS
 
@@ -11,4 +13,5 @@ def library_shell(request):
 
     return {
         "can_manage_loans": can_manage_loans,
+        "auth0_enabled": getattr(settings, "AUTH0_ENABLED", False),
     }

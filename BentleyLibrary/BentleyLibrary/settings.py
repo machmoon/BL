@@ -195,3 +195,19 @@ LLM_BASE_URL = config("LLM_BASE_URL", default="http://127.0.0.1:11434/v1").strip
 LLM_API_KEY = config("LLM_API_KEY", default="local-dev-key").strip()
 LLM_MODEL = config("LLM_MODEL", default="gpt-oss-20b").strip()
 GO_RERANKER_URL = config("GO_RERANKER_URL", default="http://127.0.0.1:8088/rank").strip()
+
+AUTH0_ENABLED = config("AUTH0_ENABLED", default=False, cast=bool)
+AUTH0_DOMAIN = config("AUTH0_DOMAIN", default="").strip()
+AUTH0_CLIENT_ID = config("AUTH0_CLIENT_ID", default="").strip()
+AUTH0_CLIENT_SECRET = config("AUTH0_CLIENT_SECRET", default="").strip()
+AUTH0_AUDIENCE = config("AUTH0_AUDIENCE", default="").strip()
+AUTH0_SCOPES = config("AUTH0_SCOPES", default="openid profile email").strip()
+AUTH0_LOGOUT_REDIRECT_URL = config("AUTH0_LOGOUT_REDIRECT_URL", default="").strip()
+
+if AUTH0_ENABLED:
+    if not AUTH0_DOMAIN or not AUTH0_CLIENT_ID:
+        raise ImproperlyConfigured(
+            "AUTH0_DOMAIN and AUTH0_CLIENT_ID are required when AUTH0_ENABLED is True."
+        )
+    if not AUTH0_DOMAIN.startswith(("http://", "https://")):
+        AUTH0_DOMAIN = f"https://{AUTH0_DOMAIN}"
