@@ -1,25 +1,38 @@
 # Bentley Library
 
-A student-first library platform for Bentley School with fast catalog search, copy-level circulation, grounded AI recommendations, and real-book metadata.
+A student-first library platform for Bentley School with fast catalog search, copy-level circulation, grounded AI recommendations, and real book metadata.
 
-## Stack
+## 🌟 Highlights
 
-- Python
-- Django
-- PostgreSQL or SQLite
-- Optional open-model or Gemini-powered intent extraction
-- Optional Go reranking service for low-latency recommendation scoring
+- Student-friendly discovery instead of a generic, admin-heavy catalog
+- PostgreSQL-backed search with indexed retrieval and full-text search benchmarking
+- Copy-level circulation, holds, and account workflows
+- ISBN lookup with live metadata and cover enrichment
+- Grounded AI recommendations tied to books actually in the catalog
+- Reading mode and research mode for different student goals
 
-## What Makes It Different
+## ℹ️ Overview
 
-- Course-aware discovery instead of generic OPAC-style search
-- ISBN lookup with real cover and metadata enrichment
-- Student-facing recommendation flow grounded in the actual catalog
-- Reading mode and research mode for different search/recommendation behavior
-- Custom Bentley-style homepage with availability, demand, and research-oriented entry points
-- Copy-level holds and circulation, not just title-level inventory
+Bentley Library is a web app designed to feel more like a great student product than a dusty library system. Students can search by title, author, ISBN, and topic, place holds, check availability, manage their account, and get grounded recommendations that only surface books the library actually has.
 
-## Quick Start
+This project was built by Patrick Liu as a modern, school-specific alternative to one-size-fits-all open source library software. The focus is on student usability: faster discovery, clearer borrowing flows, and a cleaner interface for research and independent reading.
+
+### Who it is for
+
+- Students who need to find a class book quickly
+- Librarians and staff managing circulation
+- Anyone who wants a more modern library UX than a traditional OPAC
+
+### What makes it different
+
+- Course-aware search and discovery
+- Real metadata instead of obviously fake seed data
+- AI features grounded in the catalog rather than freeform chat
+- Separate student and staff experiences
+
+## 🚀 Usage
+
+Run the app locally:
 
 ```bash
 cd BentleyLibrary
@@ -31,11 +44,19 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-Open `http://127.0.0.1:8000`.
+Open [http://127.0.0.1:8000](http://127.0.0.1:8000).
 
-## Environment
+Useful things to try:
 
-Use SQLite locally:
+- Search for a title, author, or ISBN
+- Switch between reading mode and research mode
+- Use the ISBN lookup panel on the homepage
+- Open a title page and place a hold
+- Log in and view the account dashboard
+
+## ⬇️ Installation Notes
+
+Minimum setup for local development:
 
 ```env
 SECRET_KEY=replace-with-a-long-random-secret
@@ -44,12 +65,53 @@ ALLOWED_HOSTS=localhost,127.0.0.1,testserver
 DB_ENGINE=sqlite
 ```
 
-Use PostgreSQL with either:
+You can also use PostgreSQL with either:
 
 - `DATABASE_URL=postgresql://...`
-- or `DB_ENGINE=postgresql` plus `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`
+- or `DB_ENGINE=postgresql` plus `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, and `DB_PORT`
 
-## Useful Commands
+## 🤖 AI Features
+
+The AI concierge uses a grounded flow:
+
+1. interpret student intent
+2. retrieve matching books from the catalog
+3. rerank results for relevance and availability
+4. explain why the recommendation fits
+
+You can use either:
+
+- a local open-weight model through an OpenAI-compatible endpoint
+- Gemini via `GEMINI_API_KEY`
+
+Example local open-model config:
+
+```env
+LLM_PROVIDER=openai_compatible
+LLM_BASE_URL=http://127.0.0.1:11434/v1
+LLM_API_KEY=local-dev-key
+LLM_MODEL=gpt-oss-20b
+```
+
+Optional Go reranker:
+
+```bash
+cd services/go-ranker
+go run .
+```
+
+## 🧱 Architecture
+
+The app is organized around a few core layers:
+
+- `core/presenters/` for book and UI-facing presentation logic
+- `core/services/` for homepage assembly and product event logging
+- `core/discovery/` for search orchestration
+- `core/search.py` for lexical/full-text retrieval primitives
+
+This keeps the Django views thinner and makes search, homepage curation, and analytics easier to evolve independently.
+
+## 🧪 Useful Commands
 
 Run tests:
 
@@ -63,56 +125,28 @@ Seed demo data:
 python manage.py seed_demo_library --books 1000 --users 40 --loans 300 --holds 120 --wipe-existing
 ```
 
-Benchmark app-level search:
-
-```bash
-python manage.py benchmark_search --query python --query history --query science
-```
-
-Benchmark PostgreSQL full-text search:
-
-```bash
-python manage.py benchmark_postgres_search --query python --query history --runs 10
-```
-
-Run the Go reranker:
-
-```bash
-cd services/go-ranker
-go run .
-```
-
-Use a local open model with an OpenAI-compatible endpoint:
-
-```bash
-# example env values
-LLM_PROVIDER=openai_compatible
-LLM_BASE_URL=http://127.0.0.1:11434/v1
-LLM_API_KEY=local-dev-key
-LLM_MODEL=gpt-oss-20b
-```
-
-This powers:
-
-- grounded assignment/research recommendations
-- reading vs. research intent extraction
-- zero-result rescue suggestions
-- explanation snippets tied to retrieved catalog books
-
-Import a real catalog:
+Import real books:
 
 ```bash
 python manage.py import_real_books --per-topic 15
 ```
 
-## Fly.io Deploy
+Benchmark search:
 
-This repo is configured for:
+```bash
+python manage.py benchmark_search --query python --query history --query science
+python manage.py benchmark_postgres_search --query python --query history --runs 10
+python manage.py evaluate_search
+```
+
+## 📦 Deployment
+
+This repo is set up for:
 
 - Fly.io for the Django app
 - Neon for PostgreSQL
 
-Set Fly secrets:
+Example deploy flow:
 
 ```bash
 fly secrets set \
@@ -120,27 +154,20 @@ fly secrets set \
   DATABASE_URL=postgresql://... \
   ALLOWED_HOSTS=bentley-library.fly.dev \
   CSRF_TRUSTED_ORIGINS=https://bentley-library.fly.dev
-```
 
-Deploy:
-
-```bash
 fly launch --no-deploy
 fly deploy
 ```
 
-Optional AI:
+## 👤 Author
 
-```bash
-fly secrets set GEMINI_API_KEY=your-key
-```
+Built by Patrick Liu.
 
-## Notes
+## 💬 Feedback
 
-- Django migrations are the source of truth for the schema.
-- PostgreSQL is the recommended production target.
-- `.env` is required and should never be committed.
-- The AI concierge uses a grounded flow: LLM query interpretation -> catalog retrieval -> Go/Python reranking.
-- Set `LLM_PROVIDER=openai_compatible` to use a local open-weight model, or set `LLM_PROVIDER=gemini` plus `GEMINI_API_KEY` for Gemini.
-- If no LLM provider is configured, the app falls back to the built-in local guide.
-- `fly.toml`, `Dockerfile`, WhiteNoise static handling, and Gunicorn are included for deployment.
+If you want to improve the product, open an issue or start a discussion with:
+
+- broken workflows
+- search relevance problems
+- UI/UX suggestions
+- ideas for better student or librarian features

@@ -139,10 +139,25 @@
         {% endif %}
 
         <div class="rounded-[2rem] shell-panel p-6 shadow-sm">
-            <p class="section-kicker">You might also want</p>
-            <div class="mt-4 space-y-3">
+            <div class="flex items-end justify-between gap-4">
+                <div>
+                    <p class="section-kicker">You might also want</p>
+                    <h2 class="mt-2 font-serif text-3xl text-midnight">Related titles</h2>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" class="shelf-control" data-shelf-prev="related-books" aria-label="Previous related titles">&#8592;</button>
+                    <button type="button" class="shelf-control" data-shelf-next="related-books" aria-label="Next related titles">&#8594;</button>
+                </div>
+            </div>
+            <div class="shelf-wrap mt-4">
+            <div class="shelf-track" data-shelf="related-books">
                 {% for related in related_books %}
-                <a href="{% url 'book_page' related.id %}" class="soft-card block rounded-[1.25rem] bg-white p-4 shadow-sm">
+                <a href="{% url 'book_page' related.id %}" class="shelf-card soft-card block rounded-[1.25rem] bg-white p-4 shadow-sm">
+                    {% if related.image_url %}
+                    <div class="mb-4 aspect-[3/4] overflow-hidden rounded-[1rem] bg-oat">
+                        <img src="{{ related.image_url }}" alt="{{ related.title }}" class="h-full w-full object-cover">
+                    </div>
+                    {% endif %}
                     <p class="font-semibold text-midnight">{{ related.title }}</p>
                     <p class="mt-1 text-sm text-midnight/60">{{ related.author }}</p>
                     <div class="mt-3 flex flex-wrap gap-2">
@@ -154,6 +169,7 @@
                 {% empty %}
                 <p class="rounded-[1.25rem] border border-dashed border-black/10 px-4 py-3 text-sm text-midnight/50">No related books surfaced yet.</p>
                 {% endfor %}
+            </div>
             </div>
         </div>
     </div>

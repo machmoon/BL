@@ -3,7 +3,7 @@ import csv
 from django.contrib import admin
 from django.http import HttpResponse
 
-from .models import BookCopy, Bookinventory, HoldRequest, LibraryProfile, Loan, Log
+from .models import BookCopy, Bookinventory, HoldRequest, LibraryProfile, Loan, Log, ProductEvent
 
 
 def export_as_csv(modeladmin, request, queryset):
@@ -70,3 +70,10 @@ class LibraryProfileAdmin(admin.ModelAdmin):
 class LogAdmin(ExportCsvAdmin):
     list_display = ("title", "borrower_email", "borrowed_date", "returned_date")
     search_fields = ("title", "isbn", "borrower_email")
+
+
+@admin.register(ProductEvent)
+class ProductEventAdmin(ExportCsvAdmin):
+    list_display = ("event_type", "user", "role", "book_id", "reading_goal", "created_at")
+    list_filter = ("event_type", "role", "reading_goal")
+    search_fields = ("query_text", "event_type", "user__username")

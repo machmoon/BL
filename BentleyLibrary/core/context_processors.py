@@ -1,11 +1,5 @@
 from .models import LibraryRole
-
-
-ROLE_MANAGE_LOANS = {
-    LibraryRole.LIBRARIAN,
-    LibraryRole.CURATOR,
-    LibraryRole.ADMIN,
-}
+from .presenters.books import ROLE_MANAGE_LOANS
 
 
 def library_shell(request):

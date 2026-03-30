@@ -10,7 +10,7 @@ from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import BookCopy, Bookinventory, CopyStatus, Loan, LoanStatus, Log
+from .models import BookCopy, Bookinventory, CopyStatus, Loan, LoanStatus, Log, ProductEvent
 
 
 class LibraryViewTestCase(TestCase):
@@ -246,6 +246,7 @@ class SearchAndBrowseTests(LibraryViewTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Python 101")
         self.assertNotContains(response, "History of Rome")
+        self.assertTrue(ProductEvent.objects.filter(event_type="search_submitted", query_text="Python").exists())
 
     def test_search_filters_by_available_quantity(self):
         self.create_book(title="Available Book", available_quantity=1)
@@ -388,6 +389,7 @@ class AuthAndWorkflowTests(LibraryViewTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Hold placed successfully.")
         self.assertContains(response, user.username)
+        self.assertTrue(ProductEvent.objects.filter(event_type="hold_placed", user=user, book_id=book.id).exists())
 
     @override_settings(GO_RERANKER_URL="")
     def test_ai_concierge_returns_local_fallback_matches(self):
@@ -476,3 +478,50 @@ class ManagementCommandTests(TestCase):
         self.assertIn("baseline", output)
         self.assertIn("indexed", output)
         self.assertIn("hybrid", output)
+
+    def test_evaluate_search_reports_metrics(self):
+        Bookinventory.objects.create(
+            title="US History Reader",
+            author="Jane Author",
+            isbn=str(uuid4().int)[:13],
+            published_date=date(2020, 1, 1),
+            publisher="Example Press",
+            quantity=3,
+            available_quantity=3,
+            description="History research",
+            summary="Primary sources and context",
+            audience="Upper School",
+            genre="History",
+        )
+        Bookinventory.objects.create(
+            title="Fast Fiction",
+            author="Jane Author",
+            isbn=str(uuid4().int)[:13],
+            published_date=date(2020, 1, 1),
+            publisher="Example Press",
+            quantity=3,
+            available_quantity=3,
+            description="Fast fiction",
+            summary="Quick read",
+            audience="General",
+            genre="Young Adult Fiction",
+        )
+        Bookinventory.objects.create(
+            title="Python 101",
+            author="Jane Author",
+            isbn=str(uuid4().int)[:13],
+            published_date=date(2020, 1, 1),
+            publisher="Example Press",
+            quantity=3,
+            available_quantity=3,
+            description="Introductory programming",
+            summary="Introductory programming",
+            audience="Upper School",
+            genre="Technology",
+        )
+        out = StringIO()
+        call_command("evaluate_search", stdout=out)
+        output = out.getvalue()
+
+        self.assertIn("recall@5=", output)
+        self.assertIn("precision@3=", output)

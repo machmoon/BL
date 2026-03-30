@@ -1,0 +1,17 @@
+[
+  {
+    "query": "history paper on colonialism",
+    "reading_goal": "research",
+    "expected_titles": ["US History Reader"]
+  },
+  {
+    "query": "fast read for this week",
+    "reading_goal": "reading",
+    "expected_titles": ["Fast Fiction"]
+  },
+  {
+    "query": "beginner computer science book",
+    "reading_goal": "research",
+    "expected_titles": ["Python 101"]
+  }
+]

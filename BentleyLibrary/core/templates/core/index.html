@@ -125,18 +125,23 @@
                 <p class="section-kicker">Student picks</p>
                 <h2 class="mt-2 font-serif text-3xl text-midnight">Books that feel active right now</h2>
             </div>
-            <a href="{% url 'search_results' %}" class="text-sm font-semibold text-midnight/60 transition hover:text-midnight">See all</a>
+            <div class="flex items-center gap-2">
+                <button type="button" class="shelf-control" data-shelf-prev="student-picks" aria-label="Previous student picks">&#8592;</button>
+                <button type="button" class="shelf-control" data-shelf-next="student-picks" aria-label="Next student picks">&#8594;</button>
+                <a href="{% url 'search_results' %}" class="ml-2 text-sm font-semibold text-midnight/60 transition hover:text-midnight">See all</a>
+            </div>
         </div>
-        <div class="mt-6 grid gap-4 md:grid-cols-2">
+        <div class="shelf-wrap mt-6">
+        <div class="shelf-track" data-shelf="student-picks">
             {% for book in student_picks %}
-            <a href="{% url 'book_page' book.id %}" class="soft-card rounded-[1.6rem] bg-white p-4 shadow-sm">
-                <div class="flex gap-4">
-                    <div class="h-36 w-24 shrink-0 overflow-hidden rounded-[1.2rem] bg-oat">
+            <a href="{% url 'book_page' book.id %}" class="shelf-card soft-card rounded-[1.6rem] bg-white p-4 shadow-sm">
+                <div class="flex h-full gap-4">
+                    <div class="h-40 w-28 shrink-0 overflow-hidden rounded-[1.2rem] bg-oat">
                         {% if book.image_url %}
                         <img src="{{ book.image_url }}" alt="{{ book.title }}" class="h-full w-full object-cover">
                         {% endif %}
                     </div>
-                    <div class="min-w-0">
+                    <div class="min-w-0 flex-1">
                         <p class="section-kicker">{{ book.course_tag }}</p>
                         <h3 class="mt-2 font-serif text-2xl leading-tight text-midnight">{{ book.title }}</h3>
                         <p class="mt-2 text-sm text-midnight/60">{{ book.author }}</p>
@@ -145,13 +150,14 @@
                             <span class="chip">{{ tag }}</span>
                             {% endfor %}
                         </div>
-                        <p class="mt-3 line-clamp-3 text-sm leading-6 text-midnight/58">{{ book.summary|default:book.description }}</p>
+                        <p class="clamp-3 mt-3 text-sm leading-6 text-midnight/58">{{ book.summary|default:book.description }}</p>
                     </div>
                 </div>
             </a>
             {% empty %}
-            <div class="rounded-[1.6rem] border border-dashed border-black/10 bg-white/70 p-8 text-midnight/50 md:col-span-2">Import books to populate the student picks shelf.</div>
+            <div class="rounded-[1.6rem] border border-dashed border-black/10 bg-white/70 p-8 text-midnight/50">Import books to populate the student picks shelf.</div>
             {% endfor %}
+        </div>
         </div>
     </div>
 </section>
@@ -181,28 +187,41 @@
                 <p class="section-kicker">Available now</p>
                 <h2 class="mt-2 font-serif text-3xl text-midnight">Skip the waitlist</h2>
             </div>
-            <a href="{% url 'search_results' %}?available_quantity=1" class="text-sm font-semibold text-midnight/60 transition hover:text-midnight">Browse ready copies</a>
+            <div class="flex items-center gap-2">
+                <button type="button" class="shelf-control" data-shelf-prev="available-now" aria-label="Previous available books">&#8592;</button>
+                <button type="button" class="shelf-control" data-shelf-next="available-now" aria-label="Next available books">&#8594;</button>
+                <a href="{% url 'search_results' %}?available_quantity=1" class="ml-2 text-sm font-semibold text-midnight/60 transition hover:text-midnight">Browse ready copies</a>
+            </div>
         </div>
-        <div class="mt-6 grid gap-4 sm:grid-cols-2">
+        <div class="shelf-wrap mt-6">
+        <div class="shelf-track" data-shelf="available-now">
             {% for book in available_now %}
-            <a href="{% url 'book_page' book.id %}" class="soft-card rounded-[1.5rem] bg-white p-5 shadow-sm">
-                <div class="flex items-start justify-between gap-3">
-                    <div>
+            <a href="{% url 'book_page' book.id %}" class="shelf-card soft-card rounded-[1.5rem] bg-white p-5 shadow-sm">
+                <div class="flex h-full flex-col">
+                    {% if book.image_url %}
+                    <div class="mb-4 aspect-[3/4] overflow-hidden rounded-[1.2rem] bg-oat">
+                        <img src="{{ book.image_url }}" alt="{{ book.title }}" class="h-full w-full object-cover">
+                    </div>
+                    {% endif %}
+                    <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
                         <p class="section-kicker">{{ book.course_tag }}</p>
                         <h3 class="mt-2 font-serif text-2xl text-midnight">{{ book.title }}</h3>
                         <p class="mt-2 text-sm text-midnight/60">{{ book.author }}</p>
                     </div>
                     <span class="rounded-full bg-sage px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-forest">{{ book.available_quantity }} ready</span>
-                </div>
-                <div class="mt-4 flex flex-wrap gap-2">
-                    {% for tag in book.quick_tags %}
-                    <span class="chip">{{ tag }}</span>
-                    {% endfor %}
+                    </div>
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        {% for tag in book.quick_tags %}
+                        <span class="chip">{{ tag }}</span>
+                        {% endfor %}
+                    </div>
                 </div>
             </a>
             {% empty %}
-            <div class="rounded-[1.5rem] border border-dashed border-black/10 bg-white/70 p-8 text-midnight/50 sm:col-span-2">No ready-to-borrow titles are currently surfaced.</div>
+            <div class="rounded-[1.5rem] border border-dashed border-black/10 bg-white/70 p-8 text-midnight/50">No ready-to-borrow titles are currently surfaced.</div>
             {% endfor %}
+        </div>
         </div>
     </div>
 
@@ -240,11 +259,16 @@
                 <p class="section-kicker">Fresh on the shelf</p>
                 <h2 class="mt-2 font-serif text-3xl text-midnight">Recently surfaced titles</h2>
             </div>
-            <a href="{% url 'search_results' %}" class="text-sm font-semibold text-midnight/60 transition hover:text-midnight">Full catalog</a>
+            <div class="flex items-center gap-2">
+                <button type="button" class="shelf-control" data-shelf-prev="latest-books" aria-label="Previous recently surfaced titles">&#8592;</button>
+                <button type="button" class="shelf-control" data-shelf-next="latest-books" aria-label="Next recently surfaced titles">&#8594;</button>
+                <a href="{% url 'search_results' %}" class="ml-2 text-sm font-semibold text-midnight/60 transition hover:text-midnight">Full catalog</a>
+            </div>
         </div>
-        <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div class="shelf-wrap mt-6">
+        <div class="shelf-track" data-shelf="latest-books">
             {% for book in latest_books %}
-            <a href="{% url 'book_page' book.id %}" class="soft-card rounded-[1.4rem] bg-white p-3 shadow-sm">
+            <a href="{% url 'book_page' book.id %}" class="shelf-card soft-card flex h-full flex-col rounded-[1.4rem] bg-white p-4 shadow-sm">
                 <div class="aspect-[3/4] overflow-hidden rounded-[1rem] bg-oat">
                     {% if book.image_url %}
                     <img src="{{ book.image_url }}" alt="{{ book.title }}" class="h-full w-full object-cover">
@@ -253,10 +277,12 @@
                 <p class="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-midnight/40">{{ book.published_date|date:"Y" }}</p>
                 <h3 class="mt-2 font-serif text-lg leading-tight text-midnight">{{ book.title }}</h3>
                 <p class="mt-1 text-sm text-midnight/58">{{ book.author }}</p>
+                <p class="clamp-2 mt-3 text-sm leading-6 text-midnight/55">{{ book.summary|default:book.description|truncatechars:110 }}</p>
             </a>
             {% empty %}
-            <div class="rounded-[1.5rem] border border-dashed border-black/10 bg-white/70 p-8 text-midnight/50 sm:col-span-2 lg:col-span-5">No titles yet. Import books to fill the recent shelf.</div>
+            <div class="rounded-[1.5rem] border border-dashed border-black/10 bg-white/70 p-8 text-midnight/50">No titles yet. Import books to fill the recent shelf.</div>
             {% endfor %}
+        </div>
         </div>
     </div>
 

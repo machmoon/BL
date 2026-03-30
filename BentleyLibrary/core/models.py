@@ -275,3 +275,30 @@ class Log(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.borrower_email})"
+
+
+class ProductEvent(models.Model):
+    event_type = models.CharField(max_length=64, db_index=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="product_events",
+        blank=True,
+        null=True,
+    )
+    role = models.CharField(max_length=32, blank=True, default="", db_index=True)
+    query_text = models.CharField(max_length=255, blank=True, default="")
+    book_id = models.PositiveIntegerField(blank=True, null=True, db_index=True)
+    reading_goal = models.CharField(max_length=32, blank=True, default="")
+    metadata = models.JSONField(blank=True, default=dict)
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["event_type", "created_at"], name="event_type_created_idx"),
+            models.Index(fields=["role", "created_at"], name="event_role_created_idx"),
+        ]
+
+    def __str__(self):
+        return f"{self.event_type} @ {self.created_at.isoformat()}"

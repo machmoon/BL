@@ -25,11 +25,14 @@
             <div id="search-criteria" class="space-y-3">
                 <div class="criteria rounded-[1.4rem] bg-white p-4 shadow-sm">
                     <div class="grid gap-3">
-                        <select name="logical_operator[]" class="hidden field-input">
-                            <option value="AND">AND</option>
-                            <option value="OR">OR</option>
-                            <option value="NOT">NOT</option>
-                        </select>
+                        <div class="criteria-join hidden items-center gap-3 text-xs font-semibold uppercase tracking-[0.18em] text-midnight/45">
+                            <span>Join with</span>
+                            <select name="logical_operator[]" class="field-input !w-auto !min-w-[7rem] !py-2 !text-xs">
+                                <option value="AND">AND</option>
+                                <option value="OR">OR</option>
+                                <option value="NOT">NOT</option>
+                            </select>
+                        </div>
                         <div class="grid gap-3 md:grid-cols-[0.9fr_0.9fr_1.2fr_auto]">
                             <select name="field[]" class="field-input">
                                 <option value="any_field">Any field</option>
@@ -105,16 +108,39 @@
     const searchCriteria = document.getElementById("search-criteria");
     const addButton = document.querySelector(".add-criteria");
 
+    function updateCriteriaState() {
+        const criteria = Array.from(searchCriteria.querySelectorAll(".criteria"));
+        criteria.forEach((node, index) => {
+            const joinRow = node.querySelector(".criteria-join");
+            const logicalSelect = node.querySelector('.criteria-join select[name="logical_operator[]"]');
+            const removeButton = node.querySelector(".remove-criteria");
+            if (joinRow) {
+                joinRow.classList.toggle("hidden", index === 0);
+                joinRow.classList.toggle("flex", index > 0);
+            }
+            if (logicalSelect) {
+                logicalSelect.disabled = index === 0;
+            }
+            if (removeButton) {
+                removeButton.disabled = criteria.length === 1;
+                removeButton.classList.toggle("opacity-50", criteria.length === 1);
+                removeButton.classList.toggle("cursor-not-allowed", criteria.length === 1);
+            }
+        });
+    }
+
     function attachRemoveHandler(node) {
         const removeButton = node.querySelector(".remove-criteria");
         removeButton.addEventListener("click", function () {
             if (searchCriteria.querySelectorAll(".criteria").length > 1) {
                 node.remove();
+                updateCriteriaState();
             }
         });
     }
 
     attachRemoveHandler(searchCriteria.querySelector(".criteria"));
+    updateCriteriaState();
 
     addButton.addEventListener("click", function () {
         const criteria = searchCriteria.querySelectorAll(".criteria");
@@ -123,10 +149,13 @@
         }
 
         const clone = criteria[criteria.length - 1].cloneNode(true);
-        clone.querySelector('select[name="logical_operator[]"]').classList.remove("hidden");
+        clone.querySelector('.criteria-join select[name="logical_operator[]"]').selectedIndex = 0;
+        clone.querySelector('select[name="field[]"]').selectedIndex = 0;
+        clone.querySelector('select[name="operator[]"]').selectedIndex = 0;
         clone.querySelector('input[name="search_term[]"]').value = "";
         attachRemoveHandler(clone);
         searchCriteria.appendChild(clone);
+        updateCriteriaState();
     });
 </script>
 {% endblock %}
