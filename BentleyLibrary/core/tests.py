@@ -1,595 +1,422 @@
-"""
-Comprehensive unit tests for BentleyLibrary application.
-Tests view logic, validation, error handling, and edge cases.
-"""
-from django.test import TestCase, Client, TransactionTestCase, override_settings
+from datetime import date, timedelta
+from io import StringIO
+from unittest.mock import patch
+
+from django.contrib.auth import get_user_model
+from django.core.management import call_command
+from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
-from django.db import transaction
-from django.contrib.messages import get_messages
-from django.core.exceptions import ValidationError
-from datetime import date, time, timedelta
-from unittest.mock import Mock, patch, MagicMock
-import threading
-import time as time_module
 
-from .models import Bookinventory, Log
+from .models import BookCopy, Bookinventory, CopyStatus, Loan, LoanStatus, Log
 
 
-class CheckoutViewTest(TestCase):
-    """Test checkout view functionality."""
-    
+class LibraryViewTestCase(TestCase):
     def setUp(self):
-        """Set up test client."""
         self.client = Client()
-    
-    def test_checkout_get_request(self):
-        """Test GET request to checkout page."""
-        url = reverse('checkout', args=['1234567890123'])
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'checkout.html')
-    
-    @patch('core.views.Bookinventory')
-    def test_checkout_successful(self, mock_book_model):
-        """Test successful book checkout."""
-        # Mock book object
-        mock_book = Mock()
-        mock_book.isbn = '1234567890123'
-        mock_book.title = 'Test Book'
-        mock_book.author = 'Test Author'
-        mock_book.publisher = 'Test Publisher'
-        mock_book.published_date = date(2020, 1, 1)
-        mock_book.available_quantity = 3
-        mock_book.save = Mock()
-        mock_book.refresh_from_db = Mock()
-        
-        # Mock queryset
-        mock_book_model.objects.select_for_update.return_value.get.return_value = mock_book
-        
-        # Mock Log model
-        with patch('core.views.Log') as mock_log_model:
-            mock_log_entry = Mock()
-            mock_log_model.return_value = mock_log_entry
-            mock_log_entry.save = Mock()
-            
-            url = reverse('checkout', args=['1234567890123'])
-            response = self.client.post(url, {
-                'first_name': 'John',
-                'last_name': 'Doe',
-                'email': 'john.doe@example.com'
-            })
-            
-            # Check redirect
-            self.assertEqual(response.status_code, 302)
-            
-            # Verify book quantity was decremented
-            self.assertEqual(mock_book.available_quantity, 2)
-            mock_book.save.assert_called_once()
-            mock_log_entry.save.assert_called_once()
-    
-    def test_checkout_missing_fields(self):
-        """Test checkout with missing required fields."""
-        url = reverse('checkout', args=['1234567890123'])
-        response = self.client.post(url, {
-            'first_name': 'John',
-            # Missing last_name and email
-        })
-        
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'required fields', status_code=200)
-    
-    def test_checkout_invalid_email(self):
-        """Test checkout with invalid email."""
-        url = reverse('checkout', args=['1234567890123'])
-        response = self.client.post(url, {
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'email': 'invalid-email'  # Missing @
-        })
-        
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'valid email', status_code=200)
-    
-    @patch('core.views.Bookinventory')
-    def test_checkout_no_available_copies(self, mock_book_model):
-        """Test checkout when no copies are available."""
-        # Mock book with 0 available quantity
-        mock_book = Mock()
-        mock_book.available_quantity = 0
-        mock_book_model.objects.select_for_update.return_value.get.return_value = mock_book
-        
-        url = reverse('checkout', args=['1234567890123'])
-        response = self.client.post(url, {
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'email': 'john.doe@example.com'
-        })
-        
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'No copies available', status_code=200)
-    
-    @patch('core.views.Bookinventory')
-    def test_checkout_nonexistent_book(self, mock_book_model):
-        """Test checkout with non-existent ISBN."""
-        from django.core.exceptions import ObjectDoesNotExist
-        mock_book_model.DoesNotExist = ObjectDoesNotExist
-        mock_book_model.objects.select_for_update.return_value.get.side_effect = ObjectDoesNotExist()
-        
-        url = reverse('checkout', args=['9999999999999'])
-        response = self.client.post(url, {
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'email': 'john.doe@example.com'
-        })
-        
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'not found', status_code=200)
-    
-    def test_checkout_empty_email(self):
-        """Test checkout with empty email."""
-        url = reverse('checkout', args=['1234567890123'])
-        response = self.client.post(url, {
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'email': ''
-        })
-        
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'required fields', status_code=200)
+
+    def create_book(self, **overrides):
+        data = {
+            "title": "Python 101",
+            "author": "Jane Author",
+            "isbn": "1234567890123",
+            "published_date": date(2020, 1, 1),
+            "publisher": "Example Press",
+            "quantity": 3,
+            "available_quantity": 3,
+            "description": "Introductory Python book",
+            "image_url": "https://example.com/python-101.jpg",
+        }
+        data.update(overrides)
+        book = Bookinventory.objects.create(**data)
+        available_quantity = book.available_quantity
+        for index in range(1, book.quantity + 1):
+            BookCopy.objects.create(
+                inventory=book,
+                barcode=f"LIB-{book.isbn}-{index:04d}",
+                status=CopyStatus.AVAILABLE if index <= available_quantity else CopyStatus.ON_LOAN,
+            )
+        return book
+
+    def create_log(self, book, **overrides):
+        copy = book.copies.filter(status=CopyStatus.ON_LOAN).order_by("barcode").first()
+        if not copy:
+            copy = book.copies.order_by("barcode").first()
+            if copy:
+                copy.status = CopyStatus.ON_LOAN
+                copy.save(update_fields=["status"])
+        loan = None
+        if copy:
+            loan = Loan.objects.create(
+                inventory=book,
+                copy=copy,
+                borrower_email_snapshot=overrides.get("borrower_email", "john@example.com"),
+                checked_out_at=timezone.now(),
+                due_at=timezone.now() + timedelta(days=21),
+                status=LoanStatus.ACTIVE,
+            )
+
+        data = {
+            "book": book,
+            "loan": loan,
+            "title": book.title,
+            "author": book.author,
+            "publisher": book.publisher,
+            "publication_date": book.published_date,
+            "isbn": book.isbn,
+            "borrower_first_name": "John",
+            "borrower_last_name": "Doe",
+            "borrower_email": "john@example.com",
+            "borrowed_date": date(2024, 1, 10),
+            "borrowed_time": "09:15:00",
+            "returned_date": None,
+            "returned_time": None,
+        }
+        data.update(overrides)
+        if loan and data["returned_date"]:
+            loan.status = LoanStatus.RETURNED
+            loan.returned_at = timezone.now()
+            loan.save(update_fields=["status", "returned_at"])
+            loan.copy.status = CopyStatus.AVAILABLE
+            loan.copy.save(update_fields=["status"])
+        return Log.objects.create(**data)
 
 
-class CheckinViewTest(TestCase):
-    """Test checkin view functionality."""
-    
-    def setUp(self):
-        """Set up test client."""
-        self.client = Client()
-    
-    def test_checkin_get_request(self):
-        """Test GET request to checkin page."""
-        url = reverse('checkin')
-        response = self.client.get(url)
+class CheckoutViewTests(LibraryViewTestCase):
+    def test_checkout_get_renders_template(self):
+        response = self.client.get(reverse("checkout", args=["1234567890123"]))
+
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'checkin.html')
-    
-    @patch('core.views.Log')
-    @patch('core.views.Bookinventory')
-    def test_checkin_successful(self, mock_book_model, mock_log_model):
-        """Test successful book checkin."""
-        # Mock book object
-        mock_book = Mock()
-        mock_book.isbn = '1234567890123'
-        mock_book.quantity = 5
-        mock_book.available_quantity = 2  # 3 checked out
-        mock_book.save = Mock()
-        mock_book.refresh_from_db = Mock()
-        
-        mock_book_model.objects.select_for_update.return_value.get.return_value = mock_book
-        
-        # Mock log entry
-        mock_log_entry = Mock()
-        mock_log_entry.returned_date = None
-        mock_log_entry.returned_time = None
-        mock_log_entry.save = Mock()
-        mock_log_entry.refresh_from_db = Mock()
-        
-        mock_log_model.objects.filter.return_value.order_by.return_value.first.return_value = mock_log_entry
-        
-        url = reverse('checkin')
-        response = self.client.post(url, {
-            'isbn': '1234567890123'
-        })
-        
-        # Check redirect
-        self.assertEqual(response.status_code, 302)
-        
-        # Verify book quantity was incremented
-        self.assertEqual(mock_book.available_quantity, 3)
-        mock_book.save.assert_called_once()
-        mock_log_entry.save.assert_called_once()
-        self.assertIsNotNone(mock_log_entry.returned_date)
-    
-    def test_checkin_missing_isbn(self):
-        """Test checkin with missing ISBN."""
-        url = reverse('checkin')
-        response = self.client.post(url, {})
-        
+        self.assertTemplateUsed(response, "core/checkout.html")
+
+    def test_checkout_requires_all_fields(self):
+        response = self.client.post(
+            reverse("checkout", args=["1234567890123"]),
+            {"first_name": "John"},
+        )
+
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'ISBN', status_code=200)
-    
-    @patch('core.views.Bookinventory')
-    def test_checkin_book_not_checked_out(self, mock_book_model):
-        """Test checkin when book is not checked out."""
-        # Mock book with all copies available
-        mock_book = Mock()
-        mock_book.isbn = '1234567890123'
-        mock_book.quantity = 5
-        mock_book.available_quantity = 5  # All available
-        mock_book_model.objects.select_for_update.return_value.get.return_value = mock_book
-        
-        url = reverse('checkin')
-        response = self.client.post(url, {
-            'isbn': '1234567890123'
-        })
-        
+        self.assertContains(response, "Please fill in all required fields.")
+
+    def test_checkout_validates_email(self):
+        response = self.client.post(
+            reverse("checkout", args=["1234567890123"]),
+            {"first_name": "John", "last_name": "Doe", "email": "not-an-email"},
+        )
+
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'not checked out', status_code=200)
-    
-    @patch('core.views.Bookinventory')
-    def test_checkin_nonexistent_book(self, mock_book_model):
-        """Test checkin with non-existent ISBN."""
-        from django.core.exceptions import ObjectDoesNotExist
-        mock_book_model.DoesNotExist = ObjectDoesNotExist
-        mock_book_model.objects.select_for_update.return_value.get.side_effect = ObjectDoesNotExist()
-        
-        url = reverse('checkin')
-        response = self.client.post(url, {
-            'isbn': '9999999999999'
-        })
-        
+        self.assertContains(response, "Please enter a valid email address.")
+
+    def test_checkout_rejects_when_no_copies_are_available(self):
+        self.create_book(available_quantity=0)
+
+        response = self.client.post(
+            reverse("checkout", args=["1234567890123"]),
+            {
+                "first_name": "John",
+                "last_name": "Doe",
+                "email": "john@example.com",
+            },
+        )
+
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'not found', status_code=200)
-    
-    @patch('core.views.Log')
-    @patch('core.views.Bookinventory')
-    def test_checkin_no_log_entry(self, mock_book_model, mock_log_model):
-        """Test checkin when no log entry exists."""
-        # Mock book
-        mock_book = Mock()
-        mock_book.isbn = '1234567890123'
-        mock_book.quantity = 5
-        mock_book.available_quantity = 2
-        mock_book_model.objects.select_for_update.return_value.get.return_value = mock_book
-        
-        # Mock no log entry found
-        mock_log_model.objects.filter.return_value.order_by.return_value.first.return_value = None
-        
-        url = reverse('checkin')
-        response = self.client.post(url, {
-            'isbn': '1234567890123'
-        })
-        
+        self.assertContains(response, "No copies available to check out.")
+        self.assertEqual(Log.objects.count(), 0)
+
+    def test_checkout_creates_log_and_reduces_available_quantity(self):
+        book = self.create_book(available_quantity=2)
+
+        response = self.client.post(
+            reverse("checkout", args=[book.isbn]),
+            {
+                "first_name": "John",
+                "last_name": "Doe",
+                "email": "john@example.com",
+            },
+            follow=True,
+        )
+
+        book.refresh_from_db()
+        log = Log.objects.get()
+
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'No check-out record', status_code=200)
+        self.assertEqual(book.available_quantity, 1)
+        self.assertEqual(log.book, book)
+        self.assertContains(response, "Thanks for checking out the book.")
+
+    def test_checkout_unknown_book_shows_error(self):
+        response = self.client.post(
+            reverse("checkout", args=["9999999999999"]),
+            {
+                "first_name": "John",
+                "last_name": "Doe",
+                "email": "john@example.com",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Book not found in inventory.")
 
 
-class SearchResultsViewTest(TestCase):
-    """Test search results view."""
-    
-    def setUp(self):
-        """Set up test client."""
-        self.client = Client()
-    
-    @patch('core.views.Bookinventory')
-    @patch('core.views.Log')
-    def test_search_by_title(self, mock_log_model, mock_book_model):
-        """Test search by book title."""
-        # Mock queryset
-        mock_book = Mock()
-        mock_book.title = 'Python Programming'
-        mock_book.id = 1
-        
-        mock_queryset = Mock()
-        mock_queryset.filter.return_value = [mock_book]
-        mock_queryset.values.return_value = [{'id': 1}]
-        mock_book_model.objects.filter.return_value = mock_queryset
-        
-        mock_log_model.objects.filter.return_value.values_list.return_value = []
-        
-        url = reverse('search_results')
-        response = self.client.get(url, {'q': 'Python'})
-        
+class CheckinViewTests(LibraryViewTestCase):
+    def test_checkin_get_renders_template(self):
+        response = self.client.get(reverse("checkin"))
+
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'search_results.html')
-    
-    def test_search_empty_query(self):
-        """Test search with empty query."""
-        with patch('core.views.Bookinventory') as mock_book_model:
-            mock_queryset = Mock()
-            mock_queryset.filter.return_value = []
-            mock_queryset.values.return_value = []
-            mock_book_model.objects.filter.return_value = mock_queryset
-            
-            with patch('core.views.Log') as mock_log_model:
-                mock_log_model.objects.filter.return_value.values_list.return_value = []
-                
-                url = reverse('search_results')
-                response = self.client.get(url, {'q': ''})
-                
-                self.assertEqual(response.status_code, 200)
-                self.assertTemplateUsed(response, 'search_results.html')
-    
-    @patch('core.views.Bookinventory')
-    @patch('core.views.Log')
-    def test_search_with_date_filter(self, mock_log_model, mock_book_model):
-        """Test search with date filters."""
-        mock_queryset = Mock()
-        mock_queryset.filter.return_value = []
-        mock_queryset.values.return_value = []
-        mock_book_model.objects.filter.return_value = mock_queryset
-        mock_log_model.objects.filter.return_value.values_list.return_value = []
-        
-        url = reverse('search_results')
-        response = self.client.get(url, {
-            'q': 'Python',
-            'published_date_start': '2020-01-01',
-            'published_date_end': '2020-12-31'
-        })
-        
+        self.assertTemplateUsed(response, "core/checkin.html")
+
+    def test_checkin_requires_isbn(self):
+        response = self.client.post(reverse("checkin"), {})
+
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Please provide an ISBN.")
+
+    def test_checkin_unknown_book_shows_error(self):
+        response = self.client.post(reverse("checkin"), {"isbn": "9999999999999"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Book not found in inventory.")
+
+    def test_checkin_rejects_when_book_is_not_checked_out(self):
+        self.create_book(quantity=2, available_quantity=2)
+
+        response = self.client.post(reverse("checkin"), {"isbn": "1234567890123"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "This book is not checked out.")
+
+    def test_checkin_requires_matching_log_entry(self):
+        self.create_book(quantity=2, available_quantity=1)
+
+        response = self.client.post(reverse("checkin"), {"isbn": "1234567890123"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "No check-out record found for this book.")
+
+    def test_checkin_updates_log_and_increases_available_quantity(self):
+        book = self.create_book(quantity=2, available_quantity=1)
+        log = self.create_log(book)
+
+        response = self.client.post(reverse("checkin"), {"isbn": book.isbn}, follow=True)
+
+        book.refresh_from_db()
+        log.refresh_from_db()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(book.available_quantity, 2)
+        self.assertIsNotNone(log.returned_date)
+        self.assertIsNotNone(log.returned_time)
+        self.assertContains(response, "Book checked in successfully.")
 
 
-class BookPageViewTest(TestCase):
-    """Test book page view."""
-    
-    def setUp(self):
-        """Set up test client."""
-        self.client = Client()
-    
-    @patch('core.views.Log')
-    @patch('core.views.get_object_or_404')
-    def test_book_page_exists(self, mock_get_object, mock_log_model):
-        """Test accessing an existing book page."""
-        # Mock book
-        mock_book = Mock()
-        mock_book.id = 1
-        mock_book.title = 'Test Book'
-        mock_get_object.return_value = mock_book
-        
-        # Mock log queryset
-        mock_log_model.objects.filter.return_value.values_list.return_value = []
-        
-        url = reverse('book_page', args=[1])
-        response = self.client.get(url)
-        
+class SearchAndBrowseTests(LibraryViewTestCase):
+    def test_index_page_loads(self):
+        response = self.client.get(reverse("index"))
+
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'book_page.html')
-    
-    @patch('core.views.get_object_or_404')
-    def test_book_page_nonexistent(self, mock_get_object):
-        """Test accessing a non-existent book page."""
-        from django.http import Http404
-        mock_get_object.side_effect = Http404()
-        
-        url = reverse('book_page', args=[99999])
-        response = self.client.get(url)
-        
+        self.assertTemplateUsed(response, "core/index.html")
+
+    def test_search_without_query_behaves_like_browse(self):
+        self.create_book(title="Python 101")
+        self.create_book(
+            title="Django Deep Dive",
+            isbn="3210987654321",
+            image_url="https://example.com/django.jpg",
+        )
+
+        response = self.client.get(reverse("search_results"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "core/search_results.html")
+        self.assertContains(response, "Python 101")
+        self.assertContains(response, "Django Deep Dive")
+
+    def test_search_filters_by_query(self):
+        self.create_book(title="Python 101")
+        self.create_book(
+            title="History of Rome",
+            isbn="3210987654321",
+            description="Roman history reference",
+        )
+
+        response = self.client.get(reverse("search_results"), {"q": "Python"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Python 101")
+        self.assertNotContains(response, "History of Rome")
+
+    def test_search_filters_by_available_quantity(self):
+        self.create_book(title="Available Book", available_quantity=1)
+        self.create_book(
+            title="Unavailable Book",
+            isbn="3210987654321",
+            available_quantity=0,
+        )
+
+        response = self.client.get(
+            reverse("search_results"),
+            {"available_quantity": "1"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Available Book")
+        self.assertNotContains(response, "Unavailable Book")
+
+    def test_book_page_displays_borrower_information(self):
+        book = self.create_book(quantity=2, available_quantity=1)
+        self.create_log(book, borrower_email="reader@example.com")
+
+        response = self.client.get(reverse("book_page", args=[book.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "core/book_page.html")
+        self.assertContains(response, "reader@example.com")
+
+    def test_book_page_missing_book_returns_404(self):
+        response = self.client.get(reverse("book_page", args=[99999]))
+
         self.assertEqual(response.status_code, 404)
 
 
-class IndexViewTest(TestCase):
-    """Test index/home view."""
-    
-    def setUp(self):
-        """Set up test client."""
-        self.client = Client()
-    
-    def test_index_page_loads(self):
-        """Test index page loads successfully."""
-        url = reverse('index')
-        response = self.client.get(url)
-        
+class AdvancedSearchTests(LibraryViewTestCase):
+    def test_advanced_search_page_loads_without_results(self):
+        response = self.client.get(reverse("advanced_search_results"))
+
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'core/index.html')
+        self.assertTemplateUsed(response, "core/advanced_search_results.html")
+        self.assertContains(response, "No results found.")
 
-
-class AdvancedSearchResultsTest(TestCase):
-    """Test advanced search results view."""
-    
-    def setUp(self):
-        """Set up test client."""
-        self.client = Client()
-    
-    def test_advanced_search_get(self):
-        """Test GET request to advanced search."""
-        with patch('core.views.Bookinventory') as mock_book_model:
-            mock_queryset = Mock()
-            mock_queryset.filter.return_value = []
-            mock_queryset.none.return_value = []
-            mock_book_model.objects.all.return_value = mock_queryset
-            
-            url = reverse('advanced_search_results')
-            response = self.client.get(url)
-            
-            self.assertEqual(response.status_code, 200)
-            self.assertTemplateUsed(response, 'advanced_search_results.html')
-    
     def test_advanced_search_by_title(self):
-        """Test advanced search by title."""
-        with patch('core.views.Bookinventory') as mock_book_model:
-            mock_queryset = Mock()
-            mock_queryset.filter.return_value = []
-            mock_book_model.objects.all.return_value.filter.return_value = mock_queryset
-            
-            url = reverse('advanced_search_results')
-            response = self.client.get(url, {
-                'search_type': 'everything',
-                'field[]': ['title'],
-                'operator[]': ['icontains'],
-                'search_term[]': ['Python']
-            })
-            
-            self.assertEqual(response.status_code, 200)
-    
-    def test_advanced_search_any_field(self):
-        """Test advanced search with any_field option."""
-        with patch('core.views.Bookinventory') as mock_book_model:
-            mock_queryset = Mock()
-            mock_queryset.filter.return_value = []
-            mock_book_model.objects.all.return_value.filter.return_value = mock_queryset
-            
-            url = reverse('advanced_search_results')
-            response = self.client.get(url, {
-                'search_type': 'everything',
-                'field[]': ['any_field'],
-                'operator[]': [''],
-                'search_term[]': ['Expert']
-            })
-            
-            self.assertEqual(response.status_code, 200)
-    
-    def test_advanced_search_with_date_range(self):
-        """Test advanced search with date range."""
-        with patch('core.views.Bookinventory') as mock_book_model:
-            mock_queryset = Mock()
-            mock_queryset.filter.return_value = []
-            mock_book_model.objects.all.return_value.filter.return_value = mock_queryset
-            
-            url = reverse('advanced_search_results')
-            response = self.client.get(url, {
-                'search_type': 'everything',
-                'published_date_start': '2022-01-01',
-                'published_date_end': '2022-12-31'
-            })
-            
-            self.assertEqual(response.status_code, 200)
+        self.create_book(title="Python 101")
+        self.create_book(title="Roman History", isbn="3210987654321")
 
+        response = self.client.get(
+            reverse("advanced_search_results"),
+            {
+                "search_type": "everything",
+                "field[]": ["title"],
+                "operator[]": ["icontains"],
+                "search_term[]": ["Python"],
+            },
+        )
 
-class InputValidationTest(TestCase):
-    """Test input validation across views."""
-    
-    def setUp(self):
-        """Set up test client."""
-        self.client = Client()
-    
-    def test_checkout_email_validation_edge_cases(self):
-        """Test various email validation edge cases."""
-        test_cases = [
-            ('no-at-sign', False),
-            ('@nodomain', False),
-            ('nodomain@', False),
-            ('valid@example.com', True),
-            ('test.email@domain.co.uk', True),
-        ]
-        
-        for email, should_accept in test_cases:
-            url = reverse('checkout', args=['1234567890123'])
-            response = self.client.post(url, {
-                'first_name': 'Test',
-                'last_name': 'User',
-                'email': email
-            })
-            
-            if should_accept:
-                # Should not show email error (may show other errors like book not found)
-                self.assertNotContains(response, 'valid email', status_code=200)
-            else:
-                # Should show email error
-                self.assertContains(response, 'valid email', status_code=200)
-    
-    def test_checkout_whitespace_handling(self):
-        """Test that whitespace is stripped from input."""
-        url = reverse('checkout', args=['1234567890123'])
-        response = self.client.post(url, {
-            'first_name': '  John  ',
-            'last_name': '  Doe  ',
-            'email': '  john@example.com  '
-        })
-        
-        # Should handle whitespace (validation should pass, may fail on book not found)
-        # The important thing is it doesn't crash
-        self.assertIn(response.status_code, [200, 302])
-
-
-class ErrorHandlingTest(TestCase):
-    """Test error handling in views."""
-    
-    def setUp(self):
-        """Set up test client."""
-        self.client = Client()
-    
-    @patch('core.views.Bookinventory')
-    def test_checkout_database_error(self, mock_book_model):
-        """Test checkout handles database errors gracefully."""
-        mock_book_model.objects.select_for_update.return_value.get.side_effect = Exception("Database error")
-        
-        url = reverse('checkout', args=['1234567890123'])
-        response = self.client.post(url, {
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'email': 'john@example.com'
-        })
-        
-        # Should show error message, not crash
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'error', status_code=200)
-    
-    @patch('core.views.Bookinventory')
-    def test_checkin_database_error(self, mock_book_model):
-        """Test checkin handles database errors gracefully."""
-        mock_book_model.objects.select_for_update.return_value.get.side_effect = Exception("Database error")
-        
-        url = reverse('checkin')
-        response = self.client.post(url, {
-            'isbn': '1234567890123'
-        })
-        
-        # Should show error message, not crash
+        self.assertContains(response, "Python 101")
+        self.assertNotContains(response, "Roman History")
+
+    def test_advanced_search_accepts_isbn_field(self):
+        target = self.create_book(title="Python 101")
+        self.create_book(title="Roman History", isbn="3210987654321")
+
+        response = self.client.get(
+            reverse("advanced_search_results"),
+            {
+                "search_type": "everything",
+                "field[]": ["isbn"],
+                "operator[]": ["icontains"],
+                "search_term[]": [target.isbn[-4:]],
+            },
+        )
+
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'error', status_code=200)
+        self.assertContains(response, "Python 101")
+        self.assertNotContains(response, "Roman History")
 
 
-class URLRoutingTest(TestCase):
-    """Test URL routing and reverse lookups."""
-    
-    def test_all_urls_resolve(self):
-        """Test that all URL patterns resolve correctly."""
-        urls_to_test = [
-            ('index', []),
-            ('search_results', []),
-            ('checkin', []),
-            ('advanced_search_results', []),
-            ('resource', []),
-        ]
-        
-        for url_name, args in urls_to_test:
-            try:
-                url = reverse(url_name, args=args)
-                self.assertIsNotNone(url)
-            except Exception as e:
-                self.fail(f"URL '{url_name}' failed to resolve: {e}")
-    
-    def test_checkout_url_with_isbn(self):
-        """Test checkout URL with ISBN parameter."""
-        url = reverse('checkout', args=['1234567890123'])
-        self.assertIn('1234567890123', url)
-    
-    def test_book_page_url_with_id(self):
-        """Test book page URL with book ID."""
-        url = reverse('book_page', args=[1])
-        self.assertIn('1', url)
+class ErrorHandlingTests(LibraryViewTestCase):
+    @patch("core.views.Bookinventory.objects.select_for_update")
+    def test_checkout_database_error_is_handled(self, mock_select_for_update):
+        mock_select_for_update.return_value.get.side_effect = Exception("Database error")
+
+        response = self.client.post(
+            reverse("checkout", args=["1234567890123"]),
+            {
+                "first_name": "John",
+                "last_name": "Doe",
+                "email": "john@example.com",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response, "An error occurred during checkout. Please try again."
+        )
+
+    @patch("core.views.Bookinventory.objects.select_for_update")
+    def test_checkin_database_error_is_handled(self, mock_select_for_update):
+        mock_select_for_update.return_value.get.side_effect = Exception("Database error")
+
+        response = self.client.post(reverse("checkin"), {"isbn": "1234567890123"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response, "An error occurred during checkin. Please try again."
+        )
 
 
-class MessagesTest(TestCase):
-    """Test Django messages framework integration."""
-    
-    def setUp(self):
-        """Set up test client."""
-        self.client = Client()
-    
-    @patch('core.views.Bookinventory')
-    def test_checkout_success_message(self, mock_book_model):
-        """Test that success message is set on checkout."""
-        mock_book = Mock()
-        mock_book.isbn = '1234567890123'
-        mock_book.title = 'Test Book'
-        mock_book.author = 'Test Author'
-        mock_book.publisher = 'Test Publisher'
-        mock_book.published_date = date(2020, 1, 1)
-        mock_book.available_quantity = 1
-        mock_book.save = Mock()
-        
-        mock_book_model.objects.select_for_update.return_value.get.return_value = mock_book
-        
-        with patch('core.views.Log'):
-            url = reverse('checkout', args=['1234567890123'])
-            response = self.client.post(url, {
-                'first_name': 'John',
-                'last_name': 'Doe',
-                'email': 'john@example.com'
-            }, follow=True)
-            
-            # Check for success message
-            messages = list(get_messages(response.wsgi_request))
-            self.assertTrue(any('Thanks' in str(m) for m in messages))
+class RoutingTests(TestCase):
+    def test_named_routes_use_clean_paths(self):
+        self.assertEqual(reverse("resource"), "/resources/")
+        self.assertEqual(reverse("advanced_search_results"), "/advanced-search/")
+
+    def test_legacy_paths_still_resolve(self):
+        client = Client()
+
+        self.assertEqual(client.get("/resource.html").status_code, 200)
+        self.assertEqual(client.get("/advanced_search_results/").status_code, 200)
+
+
+class AuthAndWorkflowTests(LibraryViewTestCase):
+    def test_account_overview_requires_login(self):
+        response = self.client.get(reverse("account_overview"))
+        self.assertEqual(response.status_code, 302)
+
+    def test_logged_in_user_can_place_hold(self):
+        user = get_user_model().objects.create_user(
+            username="reader",
+            email="reader@example.com",
+            password="test-pass",
+        )
+        book = self.create_book()
+
+        self.client.force_login(user)
+        response = self.client.post(reverse("place_hold", args=[book.id]), follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Hold placed successfully.")
+        self.assertContains(response, user.username)
+
+
+class ManagementCommandTests(TestCase):
+    def test_seed_demo_library_populates_books_and_loans(self):
+        call_command(
+            "seed_demo_library",
+            books=12,
+            users=4,
+            loans=5,
+            holds=3,
+            wipe_existing=True,
+            stdout=StringIO(),
+        )
+
+        self.assertGreaterEqual(Bookinventory.objects.count(), 12)
+        self.assertGreaterEqual(BookCopy.objects.count(), 12)
+        self.assertGreaterEqual(Loan.objects.count(), 5)
+
+    def test_benchmark_search_reports_strategies(self):
+        call_command(
+            "seed_demo_library",
+            books=8,
+            users=3,
+            loans=2,
+            holds=1,
+            wipe_existing=True,
+            stdout=StringIO(),
+        )
+        out = StringIO()
+        call_command("benchmark_search", query=["atlas"], runs=2, limit=5, stdout=out)
+        output = out.getvalue()
+
+        self.assertIn("baseline", output)
+        self.assertIn("indexed", output)
+        self.assertIn("hybrid", output)

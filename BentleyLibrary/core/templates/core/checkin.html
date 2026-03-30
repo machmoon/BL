@@ -1,25 +1,32 @@
-<!-- checkin.html -->
 {% extends 'core/base.html' %}
 
-{% block title %}Check-in{% endblock %}
+{% block title %}Check In{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-4">Check-in</h1>
-    {% if success_message %}
-    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-        <strong class="font-bold">Success:</strong>
-        <span class="block sm:inline">{{ success_message }}</span>
+<section class="mx-auto max-w-2xl rounded-[2rem] border border-black/5 bg-white/74 p-8 shadow-haze sm:p-10">
+    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-brass">Circulation Workflow</p>
+    <h1 class="mt-2 font-serif text-4xl text-ink">Check in a book</h1>
+    <p class="mt-3 text-sm leading-7 text-ink/65">
+        Return an item by ISBN to update copy availability, close the active loan, and release the next hold if one is waiting.
+    </p>
+
+    {% if error_message %}
+    <div class="mt-6 rounded-[1.5rem] border border-rose-200 bg-rose-50 px-5 py-4 text-rose-900" role="alert">
+        <strong class="font-semibold">Error:</strong> {{ error_message }}
     </div>
     {% endif %}
-    <form method="post" action="{% url 'checkin' %}" class="max-w-md mx-auto">
+
+    <form method="post" action="{% url 'checkin' %}" class="mt-8 space-y-5">
         {% csrf_token %}
-        <div class="mb-4">
-            <label for="isbn" class="block text-gray-700 font-bold mb-2">ISBN:</label>
-            <input type="text" id="isbn" name="isbn" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+        <div>
+            <label for="isbn" class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">ISBN</label>
+            <input type="text" id="isbn" name="isbn" required class="w-full rounded-[1.25rem] border border-black/10 bg-white px-4 py-3 text-sm focus:border-pine focus:outline-none">
         </div>
 
-        <button type="submit" class="w-full px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600">Check-in</button>
+        <div class="flex flex-col gap-3 sm:flex-row">
+            <button type="submit" class="rounded-[1.5rem] bg-ink px-5 py-3 text-sm font-semibold text-white transition hover:bg-pine">Complete Check-In</button>
+            <a href="{% url 'search_results' %}" class="rounded-[1.5rem] border border-black/10 bg-white px-5 py-3 text-center text-sm font-semibold text-ink transition hover:bg-mist">Back to Catalog</a>
+        </div>
     </form>
-</div>
+</section>
 {% endblock %}

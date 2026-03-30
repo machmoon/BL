@@ -1,6 +1,6 @@
 {% extends 'core/base.html' %}
 
-{% block title %}Advanced Search Results{% endblock %}
+{% block title %}Advanced Search{% endblock %}
 
 {% block content %}
 <div class="container mx-auto mt-8">
@@ -37,11 +37,11 @@
                                 <option value="title">Title</option>
                                 <option value="author">Author</option>
                                 <option value="publisher">Publisher</option>
-                                <option value="ISBN">ISBN</option>
+                                <option value="isbn">ISBN</option>
                             </select>
                     
                             <select name="operator[]" class="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 mr-2">
-                                <option value="contains">contains</option>
+                                <option value="icontains">contains</option>
                             </select>
                     
                             <input type="text" name="search_term[]" class="flex-grow min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 mr-2">

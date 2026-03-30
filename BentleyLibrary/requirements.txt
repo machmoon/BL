@@ -1,7 +1,7 @@
 Django==4.2.1
 python-decouple==3.8
+psycopg[binary]==3.2.9
 mysqlclient==2.1.1
-
 
 
 

@@ -1,9 +1,14 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-set -x
+set -euo pipefail
 
-# Set the backup directory
-BACKUP_DIR="/Users/patrick/Coding/BentleyLibrary"
+: "${DB_NAME:=BentleyLibrary}"
+: "${DB_HOST:=localhost}"
+: "${DB_USER:?Set DB_USER in your environment before running this script.}"
+: "${DB_PASSWORD:?Set DB_PASSWORD in your environment before running this script.}"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKUP_DIR="${BACKUP_DIR:-$SCRIPT_DIR}"
 
 # Get the current date in YYYY-MM-DD format
 DATE=$(date +"%Y-%m-%d")
@@ -12,4 +17,8 @@ DATE=$(date +"%Y-%m-%d")
 BACKUP_FILE="${BACKUP_DIR}/BentleyLibraryBackup_${DATE}.sql"
 
 # Perform the backup
-mysqldump -u root -p BentleyLibrary > $BACKUP_FILE
+mysqldump \
+  --host="$DB_HOST" \
+  --user="$DB_USER" \
+  --password="$DB_PASSWORD" \
+  "$DB_NAME" > "$BACKUP_FILE"

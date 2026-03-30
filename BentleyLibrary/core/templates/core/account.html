@@ -1,0 +1,88 @@
+{% extends 'core/base.html' %}
+
+{% block title %}My Account{% endblock %}
+
+{% block content %}
+<section class="space-y-6">
+    <div class="rounded-[2rem] border border-black/5 bg-white/74 p-8 shadow-sm">
+        <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-brass">Borrower Profile</p>
+                <h1 class="mt-2 font-serif text-4xl text-ink">My Account</h1>
+                {% if profile %}
+                <p class="mt-3 text-sm text-ink/65">Role: <span class="font-semibold capitalize text-ink">{{ profile.role }}</span> · Card {{ profile.card_number }}</p>
+                {% else %}
+                <p class="mt-3 text-sm text-ink/65">Your library profile will be created automatically on first login.</p>
+                {% endif %}
+            </div>
+            {% if profile %}
+            <div class="grid gap-3 sm:grid-cols-2">
+                <div class="rounded-[1.5rem] bg-mist px-5 py-4">
+                    <p class="text-xs uppercase tracking-[0.2em] text-ink/45">Loan Limit</p>
+                    <p class="mt-2 font-serif text-3xl text-ink">{{ profile.max_active_loans }}</p>
+                </div>
+                <div class="rounded-[1.5rem] bg-mist px-5 py-4">
+                    <p class="text-xs uppercase tracking-[0.2em] text-ink/45">Status</p>
+                    <p class="mt-2 text-sm font-semibold text-ink">{% if profile.is_email_verified %}Verified{% else %}Pending Verification{% endif %}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="grid gap-6 xl:grid-cols-[1fr_1fr]">
+        <div class="rounded-[2rem] border border-black/5 bg-white/74 p-6 shadow-sm">
+            <div class="flex items-center justify-between">
+                <h2 class="font-serif text-3xl text-ink">Active Loans</h2>
+                <span class="rounded-full bg-tide px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-ink/55">{{ active_loans|length }} checked out</span>
+            </div>
+            <div class="mt-5 space-y-4">
+                {% for loan in active_loans %}
+                <div class="reveal-card rounded-[1.5rem] border border-black/5 bg-white p-5 shadow-sm">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <p class="font-serif text-2xl text-ink">{{ loan.inventory.title }}</p>
+                            <p class="mt-2 text-sm text-ink/60">Copy {{ loan.copy.barcode }}</p>
+                        </div>
+                        <span class="rounded-full bg-sand px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-ink/60">Due {{ loan.due_at|date:"M j" }}</span>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="rounded-[1.5rem] border border-dashed border-black/10 px-5 py-8 text-center text-ink/50">
+                    No active loans right now.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="rounded-[2rem] border border-black/5 bg-white/74 p-6 shadow-sm">
+            <div class="flex items-center justify-between">
+                <h2 class="font-serif text-3xl text-ink">Active Holds</h2>
+                <span class="rounded-full bg-mist px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-ink/55">{{ hold_requests|length }} queued</span>
+            </div>
+            <div class="mt-5 space-y-4">
+                {% for hold in hold_requests %}
+                <div class="reveal-card rounded-[1.5rem] border border-black/5 bg-white p-5 shadow-sm">
+                    <p class="font-serif text-2xl text-ink">{{ hold.inventory.title }}</p>
+                    <p class="mt-2 text-sm capitalize text-ink/60">Status: {{ hold.status }}</p>
+                </div>
+                {% empty %}
+                <div class="rounded-[1.5rem] border border-dashed border-black/10 px-5 py-8 text-center text-ink/50">
+                    No active holds right now.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    {% if can_manage_loans %}
+    <div class="rounded-[2rem] border border-black/5 bg-ink p-6 text-white shadow-haze">
+        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-white/50">Staff Access</p>
+        <h2 class="mt-2 font-serif text-3xl">Circulation tools are available from search and title detail views.</h2>
+        <p class="mt-3 max-w-3xl text-sm leading-7 text-white/70">
+            Your role includes circulation permissions, so you can inspect copy status, manage holds, and process book check-ins or checkouts directly from the catalog.
+        </p>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

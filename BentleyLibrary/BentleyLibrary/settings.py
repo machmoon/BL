@@ -1,11 +1,21 @@
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
+
+from django.core.exceptions import ImproperlyConfigured
 from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-up4!ac-sd@lbwugyd!!nhv$!!6e#v^0)jaqfa_6)9r0)yh%ky_')
-DEBUG = config('DEBUG', default=True, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+SECRET_KEY = config("SECRET_KEY", default="")
+if not SECRET_KEY:
+    raise ImproperlyConfigured("SECRET_KEY environment variable is required.")
+
+DEBUG = config("DEBUG", default=False, cast=bool)
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in config("ALLOWED_HOSTS", default="localhost,127.0.0.1,testserver").split(",")
+    if host.strip()
+]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -14,7 +24,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    'core',
+    "core.apps.CoreConfig",
 ]
 
 MIDDLEWARE = [
@@ -49,31 +59,88 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "BentleyLibrary.wsgi.application"
 
-# Use SQLite for development if MySQL is not available
-USE_SQLITE = config('USE_SQLITE', default='True', cast=bool)
+# Database engine can be sqlite, postgresql, or mysql.
+DB_ENGINE = config("DB_ENGINE", default="sqlite").strip().lower()
+DATABASE_URL = config("DATABASE_URL", default="").strip()
 
-if USE_SQLITE:
+
+def database_config_from_url(database_url):
+    parsed = urlparse(database_url)
+    engine_map = {
+        "postgres": "django.db.backends.postgresql",
+        "postgresql": "django.db.backends.postgresql",
+        "pgsql": "django.db.backends.postgresql",
+        "mysql": "django.db.backends.mysql",
+    }
+    engine = engine_map.get(parsed.scheme)
+    if not engine:
+        raise ImproperlyConfigured(
+            f"Unsupported DATABASE_URL scheme '{parsed.scheme}'."
+        )
+
+    query = parse_qs(parsed.query)
+    options = {}
+    if "sslmode" in query:
+        options["sslmode"] = query["sslmode"][-1]
+    if "channel_binding" in query:
+        options["channel_binding"] = query["channel_binding"][-1]
+
+    database = {
+        "ENGINE": engine,
+        "NAME": parsed.path.lstrip("/"),
+        "USER": parsed.username or "",
+        "PASSWORD": parsed.password or "",
+        "HOST": parsed.hostname or "",
+        "PORT": str(parsed.port or ""),
+    }
+    if options:
+        database["OPTIONS"] = options
+    return {"default": database}
+
+if DATABASE_URL:
+    if DATABASE_URL.startswith(("postgres://", "postgresql://")):
+        INSTALLED_APPS.append("django.contrib.postgres")
+    DATABASES = database_config_from_url(DATABASE_URL)
+elif DB_ENGINE == "sqlite":
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
+elif DB_ENGINE == "postgresql":
+    INSTALLED_APPS.append("django.contrib.postgres")
+    DB_NAME = config("DB_NAME", default="bentleylibrary")
+    DB_USER = config("DB_USER", default="postgres")
+    DB_PASSWORD = config("DB_PASSWORD", default="")
+    DB_HOST = config("DB_HOST", default="localhost")
+    DB_PORT = config("DB_PORT", default="5432")
+
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": DB_NAME,
+            "USER": DB_USER,
+            "PASSWORD": DB_PASSWORD,
+            "HOST": DB_HOST,
+            "PORT": DB_PORT,
         }
     }
 else:
-    DB_NAME = config('DB_NAME', default='BentleyLibrary')
-    DB_USER = config('DB_USER', default='root')
-    DB_PASSWORD = config('DB_PASSWORD', default='')
-    DB_HOST = config('DB_HOST', default='localhost')
-    DB_PORT = config('DB_PORT', default='3306')
-    
+    DB_NAME = config("DB_NAME")
+    DB_USER = config("DB_USER")
+    DB_PASSWORD = config("DB_PASSWORD")
+    DB_HOST = config("DB_HOST", default="localhost")
+    DB_PORT = config("DB_PORT", default="3306")
+
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': DB_NAME,
-            'USER': DB_USER,
-            'PASSWORD': DB_PASSWORD,
-            'HOST': DB_HOST,
-            'PORT': DB_PORT,
+        "default": {
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": DB_NAME,
+            "USER": DB_USER,
+            "PASSWORD": DB_PASSWORD,
+            "HOST": DB_HOST,
+            "PORT": DB_PORT,
         }
     }
 
@@ -102,3 +169,5 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+LOGIN_REDIRECT_URL = "account_overview"
+LOGOUT_REDIRECT_URL = "index"

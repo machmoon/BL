@@ -1,52 +1,124 @@
 {% extends 'core/base.html' %}
 
-{% block title %}Search Results{% endblock %}
+{% block title %}Book Details{% endblock %}
 
 {% block content %}
+<section class="grid gap-6 xl:grid-cols-[0.72fr_1.28fr_0.9fr]">
+    <div class="rounded-[2rem] border border-black/5 bg-white/70 p-6 shadow-sm">
+        {% if book.image_url %}
+        <img src="{{ book.image_url }}" alt="{{ book.title }}" class="h-[420px] w-full rounded-[1.5rem] object-cover">
+        {% else %}
+        <div class="flex h-[420px] items-center justify-center rounded-[1.5rem] bg-gradient-to-br from-tide to-mist text-center">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-ink/40">{{ book.genre|default:"Library Catalog" }}</p>
+                <p class="mt-3 font-serif text-3xl text-ink">{{ book.title }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
 
-    <div class="container mx-auto px-4 py-8">
-        <div class="grid grid-cols-4 gap-8">
-            <div class="col-span-1">
-                <img src="{{ book.image_url }}" alt="Book Cover" class="w-full object-cover mb-4">
+    <div class="rounded-[2rem] border border-black/5 bg-white/75 p-8 shadow-sm">
+        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-brass">{{ book.genre|default:"General Collection" }}</p>
+        <h1 class="mt-3 font-serif text-5xl leading-tight text-ink">{{ book.title }}</h1>
+        <p class="mt-4 text-lg text-ink/65">{{ book.author }}</p>
+
+        <div class="mt-8 grid gap-4 sm:grid-cols-2">
+            <div class="rounded-[1.5rem] bg-mist p-4">
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-ink/45">ISBN</p>
+                <p class="mt-2 text-sm font-semibold text-ink">{{ book.isbn }}</p>
             </div>
-            <div class="col-span-2">
-                <h2 class="text-3xl font-bold mb-4"><span class="font-bold">Title:</span> {{ book.title }}</h2>
-                <p class="text-lg text-gray-800 mb-2"><span class="font-bold">ISBN:</span> {{ book.isbn }}</p>
-                <p class="text-lg text-gray-800 mb-2"><span class="font-bold">Author(s):</span> {{ book.author }}</p>
-                <p class="text-lg text-gray-800 mb-2"><span class="font-bold">Publisher:</span> {{ book.publisher }}</p>
-                <p class="text-lg text-gray-800 mb-2"><span class="font-bold">Description:</span> {{ book.description }}</p>
+            <div class="rounded-[1.5rem] bg-mist p-4">
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-ink/45">Publisher</p>
+                <p class="mt-2 text-sm font-semibold text-ink">{{ book.publisher }}</p>
             </div>
-            <div class="col-span-1">
-                <div class="bg-gray-200 rounded-lg p-4">
-                    <p class="text-lg">Available Quantity: {{ book.available_quantity }}</p>
-                    <p class="text-lg mt-2">Quantity: {{ book.quantity }}</p>
-                    <p class="text-lg mt-2">Borrower Emails:</p>
-                    <ul>
-                        {% if book.available_quantity < book.quantity %}
-                            {% if book.id in borrowed_book_ids %}
-                                {% for log_entry in borrowed_books %}
-                                    {% if log_entry.book_id == book.id %}
-                                        {% if log_entry.borrower_email %}
-                                            <li>{{ log_entry.borrower_email }}</li>
-                                        {% else %}
-                                            <li>N/A</li>
-                                        {% endif %}
-                                    {% endif %}
-                                {% endfor %}
-                            {% else %}
-                                <li>N/A</li>
-                            {% endif %}
-                        {% endif %}
+            <div class="rounded-[1.5rem] bg-mist p-4">
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-ink/45">Audience</p>
+                <p class="mt-2 text-sm font-semibold text-ink">{{ book.audience|default:"General" }}</p>
+            </div>
+            <div class="rounded-[1.5rem] bg-mist p-4">
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-ink/45">Language</p>
+                <p class="mt-2 text-sm font-semibold text-ink">{{ book.language|default:"English" }}</p>
+            </div>
+        </div>
+
+        <div class="mt-8 rounded-[1.5rem] border border-black/5 bg-white p-5">
+            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-brass">Description</p>
+            <p class="mt-3 text-sm leading-7 text-ink/70">{{ book.description }}</p>
+            {% if book.summary %}
+            <p class="mt-4 border-t border-black/5 pt-4 text-sm leading-7 text-ink/60">{{ book.summary }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="space-y-6">
+        <div class="rounded-[2rem] border border-black/5 bg-ink p-6 text-white shadow-haze">
+            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-white/50">Circulation Snapshot</p>
+            <div class="mt-5 grid gap-4">
+                <div class="rounded-[1.5rem] bg-white/8 p-4">
+                    <p class="text-xs uppercase tracking-[0.2em] text-white/55">Available</p>
+                    <p class="mt-2 font-serif text-3xl">{{ book.available_quantity }}</p>
+                </div>
+                <div class="rounded-[1.5rem] bg-white/8 p-4">
+                    <p class="text-xs uppercase tracking-[0.2em] text-white/55">Total Copies</p>
+                    <p class="mt-2 font-serif text-3xl">{{ book.quantity }}</p>
+                </div>
+            </div>
+            <div class="mt-6 grid gap-3">
+                <a href="{% url 'checkout' book.isbn %}" class="rounded-[1.5rem] bg-white px-4 py-3 text-center text-sm font-semibold text-ink transition hover:bg-mist">Check Out</a>
+                <a href="{% url 'checkin' %}" class="rounded-[1.5rem] border border-white/15 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-white/5">Check In</a>
+                {% if user.is_authenticated %}
+                <form method="post" action="{% url 'place_hold' book.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="w-full rounded-[1.5rem] bg-coral px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90">Place Hold</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="rounded-[2rem] border border-black/5 bg-white/75 p-6 shadow-sm">
+            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-brass">Active Loans</p>
+            <ul class="mt-4 space-y-3 text-sm text-ink/68">
+                {% for loan in borrowed_books %}
+                <li class="rounded-[1.25rem] bg-mist p-4">
+                    <p class="font-semibold text-ink">{{ loan.borrower_email_snapshot }}</p>
+                    {% if loan.copy %}
+                    <p class="mt-1 text-xs uppercase tracking-[0.16em] text-ink/45">{{ loan.copy.barcode }}</p>
+                    {% endif %}
+                </li>
+                {% empty %}
+                <li class="rounded-[1.25rem] border border-dashed border-black/10 p-4 text-ink/50">No active loans.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="rounded-[2rem] border border-black/5 bg-white/75 p-6 shadow-sm">
+            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-brass">Holds and Copies</p>
+            <div class="mt-4 space-y-4">
+                <div>
+                    <p class="mb-2 text-sm font-semibold text-ink">Holds</p>
+                    <ul class="space-y-2 text-sm text-ink/65">
+                        {% for hold in holds %}
+                        <li class="rounded-[1rem] bg-mist px-4 py-3">{{ hold.requester.username }} <span class="text-ink/45">({{ hold.status }})</span></li>
+                        {% empty %}
+                        <li class="rounded-[1rem] border border-dashed border-black/10 px-4 py-3 text-ink/50">No active holds.</li>
+                        {% endfor %}
                     </ul>
-                    <div class="flex justify-between mt-6">
-                        <a href="{% url 'checkout' book.isbn %}" class="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600">Check Out</a>
-
-                        <a href="{% url 'checkin' %}" class="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600">Check In</a>
-                    </div>
+                </div>
+                <div>
+                    <p class="mb-2 text-sm font-semibold text-ink">Copies</p>
+                    <ul class="space-y-2 text-sm text-ink/65">
+                        {% for copy in copies %}
+                        <li class="flex items-center justify-between rounded-[1rem] bg-white px-4 py-3 shadow-sm">
+                            <span>{{ copy.barcode }}</span>
+                            <span class="rounded-full bg-tide px-3 py-1 text-xs font-semibold text-ink/60">{{ copy.get_status_display }}</span>
+                        </li>
+                        {% empty %}
+                        <li class="rounded-[1rem] border border-dashed border-black/10 px-4 py-3 text-ink/50">No copies provisioned yet.</li>
+                        {% endfor %}
+                    </ul>
                 </div>
             </div>
         </div>
     </div>
-</body>
-</html>
+</section>
 {% endblock %}

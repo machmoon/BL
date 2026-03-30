@@ -17,7 +17,7 @@
   - `published_date_start`: Start date filter (optional)
   - `published_date_end`: End date filter (optional)
   - `available_quantity`: Quantity filter (optional)
-  - `title`, `author`, `publisher`, `ISBN`: Field-specific filters (optional)
+  - `title`, `author`, `publisher`, `isbn`: Field-specific filters (optional)
 
 ### Book Details
 - **URL**: `/book/<int:book_id>/`
@@ -44,30 +44,31 @@
 - **Response**: Redirects to index on success, error page on failure
 
 ### Advanced Search
-- **URL**: `/advanced_search_results/`
+- **Primary URL**: `/advanced-search/`
+- **Legacy URL**: `/advanced_search_results/`
 - **View**: `AdvancedSearchResults` (Class-based view)
 - **Method**: GET
 - **Parameters**:
   - `search_type`: 'everything' or 'catalog'
   - `field[]`: Array of field names to search
-  - `operator[]`: Array of operators (icontains, exact, etc.)
+  - `operator[]`: Array of operators (`icontains`, `exact`, etc.)
   - `search_term[]`: Array of search terms
   - `logical_operator[]`: Array of logical operators (AND, OR, NOT)
   - `published_date_start`: Start date filter
   - `published_date_end`: End date filter
 
 ### Resource
-- **URL**: `/resource.html`
+- **Primary URL**: `/resources/`
+- **Legacy URL**: `/resource.html`
 - **View**: `resource_view`
 - **Method**: GET
 - **Description**: Resource page
 
 ## Error Responses
 
-All views return appropriate error messages:
-- **400**: Bad request (validation errors)
-- **404**: Not found (book doesn't exist)
-- **500**: Server error (database errors, etc.)
+User-facing validation and workflow errors are rendered back into the page with a `200` response and an error message. The notable non-200 case is:
+
+- **404**: Missing book detail page
 
 ## Success Messages
 
@@ -96,7 +97,6 @@ Content-Type: application/x-www-form-urlencoded
 
 isbn=1234567890123
 ```
-
 
 
 
