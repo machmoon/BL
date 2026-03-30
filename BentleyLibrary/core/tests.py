@@ -404,30 +404,42 @@ class AuthAndWorkflowTests(LibraryViewTestCase):
         self.assertTrue(payload["books"])
 
     @override_settings(GO_RERANKER_URL="")
-    @patch("core.ai.gemini_intent")
-    def test_ai_concierge_uses_grounded_llm_path_when_intent_available(self, mock_gemini_intent):
-        self.create_book(title="US History Reader", genre="History", summary="Primary sources and context")
-        self.create_book(title="Creative Writing Essays", genre="Writing")
-        mock_gemini_intent.return_value = {
+    @patch("core.ai.llm_intent")
+    def test_ai_concierge_uses_grounded_llm_path_when_intent_available(self, mock_llm_intent):
+        self.create_book(title="US History Reader", genre="History", summary="Primary sources and context", audience="Upper School")
+        self.create_book(title="Creative Writing Essays", genre="Writing", audience="Upper School")
+        mock_llm_intent.return_value = {
             "search_query": "history primary sources",
             "course_focus": "History paper",
+            "reading_goal": "research",
             "mood": "serious",
             "reading_level": "upper school",
             "explanation": "These titles fit a history research assignment.",
             "tags": ["history", "research"],
+            "filters": {"audience": "Upper School", "available_only": False},
         }
 
         response = self.client.post(
             reverse("ai_concierge"),
-            data=json.dumps({"prompt": "I need a book for a history paper"}),
+            data=json.dumps({"prompt": "I need a book for a history paper", "reading_goal": "research"}),
             content_type="application/json",
         )
 
         self.assertEqual(response.status_code, 200)
         payload = response.json()
-        self.assertEqual(payload["mode"], "grounded-gemini-rag")
+        self.assertEqual(payload["mode"], "grounded-open-model-rag")
         self.assertEqual(payload["suggested_query"], "history primary sources")
         self.assertTrue(payload["books"])
+
+    def test_search_results_shows_rescue_suggestions_on_empty_state(self):
+        response = self.client.get(
+            reverse("search_results"),
+            {"q": "history of obscure impossible shelf", "reading_goal": "research"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Try a nearby angle")
+        self.assertContains(response, "primary sources")
 
 
 class ManagementCommandTests(TestCase):

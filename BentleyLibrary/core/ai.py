@@ -1,4 +1,4 @@
-from .gemini import gemini_intent
+from .llm_client import llm_intent
 from .reranker import rank_candidates
 from .search import search_books
 
@@ -14,10 +14,56 @@ KEYWORD_MAP = {
 }
 
 
-def fallback_concierge(prompt):
-    parsed_intent = gemini_intent(prompt)
+RESCUE_TOPICS = {
+    "history": ["primary sources", "biography", "world history"],
+    "science": ["biology", "space", "scientific discovery"],
+    "english": ["literary fiction", "poetry", "essay collections"],
+    "computer": ["technology", "artificial intelligence", "programming"],
+    "ai": ["artificial intelligence", "technology ethics", "computer science"],
+}
+
+
+def search_rescue(query, reading_goal="reading"):
+    lowered = (query or "").lower()
+    for keyword, suggestions in RESCUE_TOPICS.items():
+        if keyword in lowered:
+            return {
+                "headline": "Try a nearby angle",
+                "reason": "The catalog may match a narrower class topic better than the exact phrasing you used.",
+                "suggestions": suggestions,
+            }
+
+    if reading_goal == "research":
+        suggestions = ["biography", "history", "science", "essay collections"]
+        reason = "Research searches work better when they name a topic, field, or source type."
+    else:
+        suggestions = ["young adult fiction", "fantasy", "mystery", "memoir"]
+        reason = "Reading searches usually improve when they describe mood, genre, or pace."
+
+    return {
+        "headline": "Try one of these shelf-friendly searches",
+        "reason": reason,
+        "suggestions": suggestions,
+    }
+
+
+def fallback_concierge(prompt, reading_goal="reading"):
+    parsed_intent = llm_intent(prompt, reading_goal=reading_goal)
     if parsed_intent and parsed_intent.get("search_query"):
-        response = search_books(query=parsed_intent["search_query"], strategy="hybrid", limit=12)
+        llm_filters = {}
+        audience = parsed_intent.get("filters", {}).get("audience")
+        if audience:
+            llm_filters["audience"] = audience
+        if parsed_intent.get("filters", {}).get("available_only"):
+            llm_filters["available_quantity"] = "1"
+
+        strategy = "indexed" if parsed_intent.get("reading_goal") == "research" else "hybrid"
+        response = search_books(
+            query=parsed_intent["search_query"],
+            filters=llm_filters,
+            strategy=strategy,
+            limit=12,
+        )
         candidates = list(response.queryset[:12])
         ranked = rank_candidates(parsed_intent["search_query"], parsed_intent, candidates)
         books = []
@@ -34,10 +80,11 @@ def fallback_concierge(prompt):
                 }
             )
         return {
-            "mode": "grounded-gemini-rag",
+            "mode": "grounded-open-model-rag",
             "headline": parsed_intent.get("explanation") or "Here are the best grounded matches from the Bentley catalog.",
             "reason": (
                 f"Interpreted this as {parsed_intent.get('course_focus') or 'general discovery'}"
+                f" in {parsed_intent.get('reading_goal', reading_goal)} mode"
                 f"{' with a ' + parsed_intent.get('mood') + ' tone' if parsed_intent.get('mood') else ''}."
             ),
             "suggested_query": parsed_intent["search_query"],
@@ -59,7 +106,8 @@ def fallback_concierge(prompt):
             "reason": "These are the closest matches based on the way you described what you need.",
         }
 
-    response = search_books(query=selected["query"], strategy="indexed", limit=4)
+    strategy = "indexed" if reading_goal == "research" else "indexed"
+    response = search_books(query=selected["query"], strategy=strategy, limit=4)
     books = []
     for book in response.queryset[:4]:
         books.append(
@@ -83,4 +131,5 @@ def fallback_concierge(prompt):
         "reason": selected["reason"],
         "suggested_query": selected["query"],
         "books": books,
+        "goal": reading_goal,
     }

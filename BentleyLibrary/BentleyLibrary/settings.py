@@ -189,4 +189,8 @@ if not DEBUG:
 
 GEMINI_API_KEY = config("GEMINI_API_KEY", default="").strip()
 GEMINI_MODEL = config("GEMINI_MODEL", default="gemini-2.5-flash").strip()
+LLM_PROVIDER = config("LLM_PROVIDER", default="off").strip().lower()
+LLM_BASE_URL = config("LLM_BASE_URL", default="http://127.0.0.1:11434/v1").strip()
+LLM_API_KEY = config("LLM_API_KEY", default="local-dev-key").strip()
+LLM_MODEL = config("LLM_MODEL", default="gpt-oss-20b").strip()
 GO_RERANKER_URL = config("GO_RERANKER_URL", default="http://127.0.0.1:8088/rank").strip()

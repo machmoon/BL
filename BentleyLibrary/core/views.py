@@ -14,7 +14,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.generic import ListView
 
-from .ai import fallback_concierge
+from .ai import fallback_concierge, search_rescue
 from .models import (
     BookCopy,
     Bookinventory,
@@ -488,6 +488,9 @@ def resource_view(request):
 def search_results(request):
     query = request.GET.get("q", "").strip()
     strategy = request.GET.get("strategy", "auto").strip() or "auto"
+    reading_goal = request.GET.get("reading_goal", "reading").strip().lower()
+    if reading_goal not in {"reading", "research"}:
+        reading_goal = "reading"
     filters = {
         "published_date_start": request.GET.get("published_date_start", ""),
         "published_date_end": request.GET.get("published_date_end", ""),
@@ -499,6 +502,8 @@ def search_results(request):
         "genre": request.GET.get("genre", ""),
         "audience": request.GET.get("audience", ""),
     }
+    if reading_goal == "research" and not filters["audience"]:
+        filters["audience"] = "Upper School"
 
     response = search_books(query=query, filters=filters, strategy=strategy, limit=200)
     results_queryset = response.queryset
@@ -527,6 +532,8 @@ def search_results(request):
         "borrowed_book_ids": borrowed_book_ids,
         "search_strategy": response.strategy,
         "search_elapsed_ms": round(response.latency_ms, 2),
+        "reading_goal": reading_goal,
+        "search_rescue": search_rescue(query, reading_goal=reading_goal) if query and not results else None,
     }
     return render(request, SEARCH_RESULTS_TEMPLATE, context)
 
@@ -742,7 +749,10 @@ def ai_concierge(request):
         return JsonResponse({"error": "Invalid JSON payload."}, status=400)
 
     prompt = payload.get("prompt", "").strip()
+    reading_goal = payload.get("reading_goal", "reading").strip().lower()
+    if reading_goal not in {"reading", "research"}:
+        reading_goal = "reading"
     if not prompt:
         return JsonResponse({"error": "Prompt is required."}, status=400)
 
-    return JsonResponse(fallback_concierge(prompt))
+    return JsonResponse(fallback_concierge(prompt, reading_goal=reading_goal))

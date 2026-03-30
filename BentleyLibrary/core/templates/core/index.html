@@ -48,6 +48,11 @@
             </p>
             <form id="ai-concierge-form" class="mt-5 space-y-3">
                 {% csrf_token %}
+                <div class="flex flex-wrap gap-2">
+                    <input type="hidden" id="ai-reading-goal" value="reading">
+                    <button type="button" data-ai-goal="reading" class="ai-goal-toggle rounded-full bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-midnight">Reading mode</button>
+                    <button type="button" data-ai-goal="research" class="ai-goal-toggle rounded-full border border-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/72">Research mode</button>
+                </div>
                 <textarea id="ai-prompt" rows="3" class="field-input !border-white/10 !bg-white/8 !text-white placeholder:!text-white/35" placeholder="I need a book for a history paper that is interesting and not too dry."></textarea>
                 <button type="submit" class="rounded-full bg-white px-5 py-3 text-sm font-semibold text-midnight transition hover:bg-paper">Ask the library</button>
             </form>
@@ -288,6 +293,9 @@
     function renderAiResult(payload) {
         const container = document.getElementById("ai-results");
         const books = (payload.books || []).slice(0, 3);
+        const intentTags = (payload.intent?.tags || []).slice(0, 4).map((tag) => `
+            <span class="rounded-full border border-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/62">${tag}</span>
+        `).join("");
         const cards = books.map((book) => `
             <a href="${bookUrlTemplate.replace("0", book.id)}" class="block rounded-[1.2rem] border border-white/10 bg-white/6 p-4 transition hover:bg-white/10">
                 <p class="font-semibold text-white">${book.title}</p>
@@ -301,6 +309,7 @@
             <h3 class="mt-2 font-serif text-2xl text-white">${payload.headline || "Try these books"}</h3>
             <p class="mt-2 text-sm leading-6 text-white/72">${payload.reason || ""}</p>
             <p class="mt-3 text-sm text-white/72">Suggested search: <a class="font-semibold text-white underline decoration-white/20 underline-offset-4" href="{% url 'search_results' %}?q=${encodeURIComponent(payload.suggested_query || "")}">${payload.suggested_query || ""}</a></p>
+            ${intentTags ? `<div class="mt-4 flex flex-wrap gap-2">${intentTags}</div>` : ""}
             <div class="mt-4 grid gap-3">${cards || '<p class="text-sm text-white/70">No matching books yet.</p>'}</div>
         `;
         container.classList.remove("hidden");
@@ -335,9 +344,26 @@
         container.classList.remove("hidden");
     }
 
+    document.querySelectorAll(".ai-goal-toggle").forEach((button) => {
+        button.addEventListener("click", () => {
+            const nextGoal = button.dataset.aiGoal;
+            document.getElementById("ai-reading-goal").value = nextGoal;
+            document.querySelectorAll(".ai-goal-toggle").forEach((candidate) => {
+                const active = candidate.dataset.aiGoal === nextGoal;
+                candidate.classList.toggle("bg-white", active);
+                candidate.classList.toggle("text-midnight", active);
+                candidate.classList.toggle("bg-transparent", !active);
+                candidate.classList.toggle("border", !active);
+                candidate.classList.toggle("border-white/15", !active);
+                candidate.classList.toggle("text-white/72", !active);
+            });
+        });
+    });
+
     document.getElementById("ai-concierge-form")?.addEventListener("submit", async (event) => {
         event.preventDefault();
         const prompt = document.getElementById("ai-prompt").value.trim();
+        const readingGoal = document.getElementById("ai-reading-goal").value;
         const container = document.getElementById("ai-results");
         if (!prompt) {
             container.innerHTML = '<p class="text-sm text-white/70">Give the library a little context first.</p>';
@@ -352,7 +378,7 @@
                 "Content-Type": "application/json",
                 "X-CSRFToken": getCookie("csrftoken"),
             },
-            body: JSON.stringify({ prompt }),
+            body: JSON.stringify({ prompt, reading_goal: readingGoal }),
         });
         const payload = await response.json();
         renderAiResult(payload);

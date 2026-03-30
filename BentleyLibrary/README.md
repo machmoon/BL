@@ -7,7 +7,7 @@ A student-first library platform for Bentley School with fast catalog search, co
 - Python
 - Django
 - PostgreSQL or SQLite
-- Optional Gemini-powered intent extraction
+- Optional open-model or Gemini-powered intent extraction
 - Optional Go reranking service for low-latency recommendation scoring
 
 ## What Makes It Different
@@ -15,6 +15,7 @@ A student-first library platform for Bentley School with fast catalog search, co
 - Course-aware discovery instead of generic OPAC-style search
 - ISBN lookup with real cover and metadata enrichment
 - Student-facing recommendation flow grounded in the actual catalog
+- Reading mode and research mode for different search/recommendation behavior
 - Custom Bentley-style homepage with availability, demand, and research-oriented entry points
 - Copy-level holds and circulation, not just title-level inventory
 
@@ -81,6 +82,23 @@ cd services/go-ranker
 go run .
 ```
 
+Use a local open model with an OpenAI-compatible endpoint:
+
+```bash
+# example env values
+LLM_PROVIDER=openai_compatible
+LLM_BASE_URL=http://127.0.0.1:11434/v1
+LLM_API_KEY=local-dev-key
+LLM_MODEL=gpt-oss-20b
+```
+
+This powers:
+
+- grounded assignment/research recommendations
+- reading vs. research intent extraction
+- zero-result rescue suggestions
+- explanation snippets tied to retrieved catalog books
+
 Import a real catalog:
 
 ```bash
@@ -123,5 +141,6 @@ fly secrets set GEMINI_API_KEY=your-key
 - PostgreSQL is the recommended production target.
 - `.env` is required and should never be committed.
 - The AI concierge uses a grounded flow: LLM query interpretation -> catalog retrieval -> Go/Python reranking.
-- Set `GEMINI_API_KEY` locally if you want the Gemini-enhanced path; otherwise the app falls back to the built-in local guide.
+- Set `LLM_PROVIDER=openai_compatible` to use a local open-weight model, or set `LLM_PROVIDER=gemini` plus `GEMINI_API_KEY` for Gemini.
+- If no LLM provider is configured, the app falls back to the built-in local guide.
 - `fly.toml`, `Dockerfile`, WhiteNoise static handling, and Gunicorn are included for deployment.
