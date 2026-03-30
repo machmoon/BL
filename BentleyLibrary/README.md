@@ -87,6 +87,36 @@ Import a real catalog:
 python manage.py import_real_books --per-topic 15
 ```
 
+## Fly.io Deploy
+
+This repo is configured for:
+
+- Fly.io for the Django app
+- Neon for PostgreSQL
+
+Set Fly secrets:
+
+```bash
+fly secrets set \
+  SECRET_KEY=replace-me \
+  DATABASE_URL=postgresql://... \
+  ALLOWED_HOSTS=bentley-library.fly.dev \
+  CSRF_TRUSTED_ORIGINS=https://bentley-library.fly.dev
+```
+
+Deploy:
+
+```bash
+fly launch --no-deploy
+fly deploy
+```
+
+Optional AI:
+
+```bash
+fly secrets set GEMINI_API_KEY=your-key
+```
+
 ## Notes
 
 - Django migrations are the source of truth for the schema.
@@ -94,3 +124,4 @@ python manage.py import_real_books --per-topic 15
 - `.env` is required and should never be committed.
 - The AI concierge uses a grounded flow: LLM query interpretation -> catalog retrieval -> Go/Python reranking.
 - Set `GEMINI_API_KEY` locally if you want the Gemini-enhanced path; otherwise the app falls back to the built-in local guide.
+- `fly.toml`, `Dockerfile`, WhiteNoise static handling, and Gunicorn are included for deployment.
