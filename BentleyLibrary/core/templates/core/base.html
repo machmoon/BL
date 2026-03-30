@@ -7,95 +7,188 @@
     <title>{% block title %}{% endblock %} | Bentley Library</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        ink: "#171c24",
-                        mist: "#f5f1e8",
-                        tide: "#dce9ea",
-                        sand: "#e8dcc8",
-                        brass: "#8a633b",
-                        pine: "#24463b",
-                        coral: "#c96f4a",
-                    },
-                    boxShadow: {
-                        haze: "0 25px 80px rgba(23, 28, 36, 0.12)",
+                        midnight: "#10211b",
+                        forest: "#17352b",
+                        moss: "#365d4d",
+                        pine: "#5a7a67",
+                        sage: "#c5d4c9",
+                        paper: "#f7f2e8",
+                        oat: "#efe4d2",
+                        brass: "#b18b53",
+                        coral: "#d9795b",
                     },
                     fontFamily: {
-                        sans: ["Manrope", "sans-serif"],
+                        sans: ["Outfit", "sans-serif"],
                         serif: ["Fraunces", "serif"],
                     },
-                }
-            }
+                    boxShadow: {
+                        cinematic: "0 24px 80px rgba(16, 33, 27, 0.16)",
+                    },
+                },
+            },
         };
     </script>
     <style>
-        :root {
-            color-scheme: light;
-        }
-
         body {
             min-height: 100vh;
-            color: #171c24;
+            color: #10211b;
             background:
-                radial-gradient(circle at top left, rgba(220, 233, 234, 0.95), transparent 30%),
-                radial-gradient(circle at 85% 15%, rgba(201, 111, 74, 0.12), transparent 20%),
-                linear-gradient(180deg, #f6f2ea 0%, #fbfaf7 42%, #edf3ef 100%);
+                radial-gradient(circle at 12% 16%, rgba(177, 139, 83, 0.12), transparent 16%),
+                radial-gradient(circle at 82% 12%, rgba(90, 122, 103, 0.16), transparent 18%),
+                radial-gradient(circle at 80% 76%, rgba(217, 121, 91, 0.10), transparent 16%),
+                linear-gradient(180deg, #fbf7f0 0%, #f7f2e8 42%, #f3ede3 100%);
         }
 
-        .ambient-grid {
+        .mesh {
             background-image:
-                linear-gradient(rgba(23, 28, 36, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(23, 28, 36, 0.03) 1px, transparent 1px);
-            background-size: 32px 32px;
-        }
-
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.72);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-        }
-
-        .hero-orb {
-            position: absolute;
-            border-radius: 9999px;
-            filter: blur(8px);
-            opacity: 0.8;
-            animation: drift 12s ease-in-out infinite;
-        }
-
-        .hero-orb:nth-child(2) {
-            animation-delay: -4s;
-        }
-
-        .hero-orb:nth-child(3) {
-            animation-delay: -8s;
-        }
-
-        .reveal-card {
-            transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
-        }
-
-        .reveal-card:hover {
-            transform: translateY(-6px);
+                linear-gradient(rgba(16, 33, 27, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(16, 33, 27, 0.04) 1px, transparent 1px);
+            background-size: 44px 44px;
         }
 
         .page-enter {
-            animation: rise-in 500ms ease;
+            animation: fade-up 420ms ease;
         }
 
-        @keyframes drift {
-            0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-            50% { transform: translate3d(10px, -12px, 0) scale(1.05); }
+        .shell-panel {
+            background: rgba(255, 252, 247, 0.82);
+            border: 1px solid rgba(16, 33, 27, 0.08);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
         }
 
-        @keyframes rise-in {
+        .shell-dark {
+            background: linear-gradient(160deg, rgba(16, 33, 27, 0.96), rgba(23, 53, 43, 0.95));
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .soft-card {
+            transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+        }
+
+        .soft-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 22px 40px rgba(16, 33, 27, 0.14);
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            background: rgba(239, 228, 210, 0.8);
+            padding: 0.45rem 0.8rem;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: rgba(16, 33, 27, 0.68);
+        }
+
+        .section-kicker {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: rgba(16, 33, 27, 0.56);
+        }
+
+        .field-input {
+            width: 100%;
+            border-radius: 1.1rem;
+            border: 1px solid rgba(16, 33, 27, 0.10);
+            background: rgba(255, 255, 255, 0.92);
+            padding: 0.95rem 1rem;
+            font-size: 0.95rem;
+            color: #10211b;
+            outline: none;
+        }
+
+        .field-input:focus {
+            border-color: rgba(90, 122, 103, 0.9);
+            box-shadow: 0 0 0 3px rgba(197, 212, 201, 0.35);
+        }
+
+        .primary-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            background: #17352b;
+            padding: 0.9rem 1.25rem;
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: white;
+            transition: transform 180ms ease, opacity 180ms ease, background 180ms ease;
+        }
+
+        .primary-button:hover {
+            transform: translateY(-1px);
+            background: #10211b;
+        }
+
+        .secondary-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            border: 1px solid rgba(16, 33, 27, 0.10);
+            background: rgba(255, 255, 255, 0.92);
+            padding: 0.9rem 1.25rem;
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: #10211b;
+            transition: transform 180ms ease, background 180ms ease;
+        }
+
+        .secondary-button:hover {
+            transform: translateY(-1px);
+            background: #efe4d2;
+        }
+
+        form p {
+            display: grid;
+            gap: 0.55rem;
+            margin-bottom: 1rem;
+        }
+
+        form p label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: rgba(16, 33, 27, 0.56);
+        }
+
+        form p input,
+        form p select,
+        form p textarea {
+            width: 100%;
+            border-radius: 1.1rem;
+            border: 1px solid rgba(16, 33, 27, 0.10);
+            background: rgba(255, 255, 255, 0.92);
+            padding: 0.95rem 1rem;
+            font-size: 0.95rem;
+            color: #10211b;
+            outline: none;
+        }
+
+        form p input:focus,
+        form p select:focus,
+        form p textarea:focus {
+            border-color: rgba(90, 122, 103, 0.9);
+            box-shadow: 0 0 0 3px rgba(197, 212, 201, 0.35);
+        }
+
+        @keyframes fade-up {
             from {
                 opacity: 0;
-                transform: translateY(18px);
+                transform: translateY(16px);
             }
             to {
                 opacity: 1;
@@ -105,74 +198,71 @@
     </style>
 </head>
 <body class="font-sans antialiased">
-    <div class="fixed inset-0 -z-10 overflow-hidden">
-        <div class="hero-orb h-72 w-72 bg-tide/60 top-10 left-6"></div>
-        <div class="hero-orb h-56 w-56 bg-sand/70 top-24 right-16"></div>
-        <div class="hero-orb h-64 w-64 bg-coral/10 bottom-16 left-1/3"></div>
-        <div class="ambient-grid absolute inset-0 opacity-50"></div>
-    </div>
+    <div class="mesh pointer-events-none fixed inset-0 -z-10 opacity-50"></div>
 
-    <header class="sticky top-0 z-30 border-b border-black/5 glass-panel">
+    <header class="sticky top-0 z-30 border-b border-black/5 bg-[rgba(251,247,240,0.82)] backdrop-blur-xl">
         <div class="mx-auto max-w-7xl px-4 py-4 sm:px-6">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                 <div class="flex items-center justify-between gap-4">
-                    <a href="{% url 'index' %}" class="group inline-flex items-center gap-3">
-                        <span class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-ink text-sm font-bold tracking-[0.24em] text-white">BL</span>
+                    <a href="{% url 'index' %}" class="flex items-center gap-3">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brass to-coral text-sm font-bold tracking-[0.26em] text-white shadow-cinematic">
+                            BL
+                        </div>
                         <div>
-                            <p class="font-serif text-2xl leading-none text-ink">Bentley Library</p>
-                            <p class="mt-1 text-xs uppercase tracking-[0.28em] text-ink/50">Catalog and Circulation</p>
+                            <p class="font-serif text-2xl text-midnight">Bentley Library</p>
+                            <p class="text-xs uppercase tracking-[0.28em] text-midnight/45">Student built for students</p>
                         </div>
                     </a>
-                    <details class="lg:hidden">
-                        <summary class="list-none rounded-2xl border border-black/10 bg-white/80 px-4 py-2 text-sm font-semibold text-ink shadow-sm cursor-pointer">Menu</summary>
-                        <div class="mt-3 grid gap-2 rounded-3xl border border-black/5 bg-white/95 p-4 shadow-haze">
-                            <a href="{% url 'search_results' %}" class="rounded-2xl px-3 py-2 hover:bg-ink/5">Browse</a>
-                            <a href="{% url 'advanced_search_results' %}" class="rounded-2xl px-3 py-2 hover:bg-ink/5">Advanced Search</a>
-                            <a href="{% url 'resource' %}" class="rounded-2xl px-3 py-2 hover:bg-ink/5">Resources</a>
-                            <a href="{% url 'checkin' %}" class="rounded-2xl px-3 py-2 hover:bg-ink/5">Check In</a>
+                    <details class="xl:hidden">
+                        <summary class="list-none rounded-2xl border border-black/10 px-4 py-2 text-sm font-semibold text-midnight/80 cursor-pointer">Menu</summary>
+                        <div class="mt-3 grid gap-2 rounded-3xl shell-panel p-4 text-sm text-midnight/80">
+                            <a href="{% url 'search_results' %}" class="rounded-2xl px-3 py-2 hover:bg-paper">Catalog</a>
+                            <a href="{% url 'advanced_search_results' %}" class="rounded-2xl px-3 py-2 hover:bg-paper">Advanced Search</a>
+                            <a href="{% url 'resource' %}" class="rounded-2xl px-3 py-2 hover:bg-paper">Resources</a>
+                            <a href="{% url 'checkin' %}" class="rounded-2xl px-3 py-2 hover:bg-paper">Check In</a>
                             {% if user.is_authenticated %}
-                            <a href="{% url 'account_overview' %}" class="rounded-2xl px-3 py-2 hover:bg-ink/5">My Account</a>
+                            <a href="{% url 'account_overview' %}" class="rounded-2xl px-3 py-2 hover:bg-paper">My Account</a>
                             {% endif %}
                         </div>
                     </details>
                 </div>
 
-                <div class="hidden items-center gap-2 lg:flex">
-                    <a href="{% url 'search_results' %}" class="rounded-full px-4 py-2 text-sm font-semibold text-ink/75 transition hover:bg-white/75 hover:text-ink">Browse</a>
-                    <a href="{% url 'advanced_search_results' %}" class="rounded-full px-4 py-2 text-sm font-semibold text-ink/75 transition hover:bg-white/75 hover:text-ink">Advanced Search</a>
-                    <a href="{% url 'resource' %}" class="rounded-full px-4 py-2 text-sm font-semibold text-ink/75 transition hover:bg-white/75 hover:text-ink">Resources</a>
-                    <a href="{% url 'checkin' %}" class="rounded-full px-4 py-2 text-sm font-semibold text-ink/75 transition hover:bg-white/75 hover:text-ink">Check In</a>
+                <nav class="hidden items-center gap-2 xl:flex">
+                    <a href="{% url 'search_results' %}" class="rounded-full px-4 py-2 text-sm font-semibold text-midnight/70 transition hover:bg-white hover:text-midnight">Catalog</a>
+                    <a href="{% url 'advanced_search_results' %}" class="rounded-full px-4 py-2 text-sm font-semibold text-midnight/70 transition hover:bg-white hover:text-midnight">Advanced Search</a>
+                    <a href="{% url 'resource' %}" class="rounded-full px-4 py-2 text-sm font-semibold text-midnight/70 transition hover:bg-white hover:text-midnight">Resources</a>
+                    <a href="{% url 'checkin' %}" class="rounded-full px-4 py-2 text-sm font-semibold text-midnight/70 transition hover:bg-white hover:text-midnight">Check In</a>
                     {% if user.is_authenticated %}
-                    <a href="{% url 'account_overview' %}" class="rounded-full px-4 py-2 text-sm font-semibold text-ink/75 transition hover:bg-white/75 hover:text-ink">My Account</a>
+                    <a href="{% url 'account_overview' %}" class="rounded-full px-4 py-2 text-sm font-semibold text-midnight/70 transition hover:bg-white hover:text-midnight">My Account</a>
                     {% endif %}
-                </div>
+                </nav>
             </div>
 
             <div class="mt-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                <form action="{% url 'search_results' %}" method="GET" class="flex flex-col gap-3 md:flex-row md:items-center">
-                    <div class="flex items-center overflow-hidden rounded-[1.75rem] border border-black/10 bg-white/85 shadow-sm">
-                        <input type="text" name="q" placeholder="Search the catalog" class="w-full min-w-0 bg-transparent px-5 py-3 text-sm focus:outline-none md:w-80" value="{{ query|default:'' }}">
+                <form action="{% url 'search_results' %}" method="GET" class="flex flex-col gap-3 md:flex-row">
+                    <div class="flex items-center overflow-hidden rounded-[1.6rem] border border-black/10 bg-white/88 shadow-sm">
+                        <input type="text" name="q" placeholder="Search class books, authors, ISBNs, research topics" class="w-full min-w-0 bg-transparent px-5 py-3 text-sm text-midnight placeholder:text-midnight/35 focus:outline-none md:w-96" value="{{ query|default:'' }}">
                         <div class="h-8 w-px bg-black/10"></div>
-                        <select name="strategy" class="bg-transparent px-4 py-3 text-sm text-ink/70 focus:outline-none">
+                        <select name="strategy" class="bg-transparent px-4 py-3 text-sm text-midnight/70 focus:outline-none">
                             <option value="auto" {% if search_strategy == 'hybrid' or not search_strategy %}selected{% endif %}>Hybrid</option>
                             <option value="indexed" {% if search_strategy == 'indexed' %}selected{% endif %}>Indexed</option>
                             <option value="baseline" {% if search_strategy == 'baseline' %}selected{% endif %}>Baseline</option>
                         </select>
                     </div>
-                    <button type="submit" class="rounded-[1.75rem] bg-ink px-5 py-3 text-sm font-semibold text-white transition hover:bg-pine">Search</button>
+                    <button type="submit" class="primary-button">Search</button>
                 </form>
 
                 <div class="flex items-center gap-3 text-sm">
                     {% if user.is_authenticated %}
-                    <div class="hidden rounded-full border border-black/10 bg-white/80 px-4 py-2 text-ink/70 md:block">
-                        Signed in as <span class="font-semibold text-ink">{{ user.username }}</span>
+                    <div class="hidden rounded-full border border-black/10 bg-white/80 px-4 py-2 text-midnight/65 md:block">
+                        Signed in as <span class="font-semibold text-midnight">{{ user.username }}</span>
                     </div>
                     <form method="post" action="{% url 'logout' %}">
                         {% csrf_token %}
-                        <button type="submit" class="rounded-[1.75rem] border border-black/10 bg-white/80 px-4 py-3 font-semibold text-ink transition hover:bg-white">Log Out</button>
+                        <button type="submit" class="secondary-button">Log Out</button>
                     </form>
                     {% else %}
-                    <a href="{% url 'login' %}" class="rounded-[1.75rem] border border-black/10 bg-white/80 px-4 py-3 font-semibold text-ink transition hover:bg-white">Log In</a>
+                    <a href="{% url 'login' %}" class="secondary-button">Log In</a>
                     {% endif %}
                 </div>
             </div>
@@ -183,29 +273,22 @@
         {% if messages %}
         <div class="mb-6 space-y-3">
             {% for message in messages %}
-            <div class="rounded-3xl border px-5 py-4 shadow-sm {% if message.tags == 'success' %}border-emerald-200 bg-emerald-50/95 text-emerald-900{% elif message.tags == 'error' %}border-rose-200 bg-rose-50/95 text-rose-900{% else %}border-black/10 bg-white/90 text-ink{% endif %}">
+            <div class="rounded-[1.5rem] border px-5 py-4 {% if message.tags == 'success' %}border-emerald-200 bg-emerald-50 text-emerald-900{% elif message.tags == 'error' %}border-rose-200 bg-rose-50 text-rose-900{% else %}border-black/10 bg-white/80 text-midnight/80{% endif %}">
                 {{ message }}
             </div>
             {% endfor %}
         </div>
         {% endif %}
-        {% block content %}
-        {% endblock %}
+        {% block content %}{% endblock %}
     </main>
 
-    <footer class="mt-12 border-t border-black/5 bg-ink text-white">
-        <div class="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[1.4fr_0.8fr]">
+    <footer class="mt-12 border-t border-black/5 bg-[rgba(255,251,245,0.78)]">
+        <div class="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-8 text-sm text-midnight/60 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
             <div>
-                <p class="font-serif text-2xl">Bentley Library</p>
-                <p class="mt-3 max-w-2xl text-sm leading-7 text-white/70">
-                    A modern catalog, circulation, and discovery workspace with PostgreSQL-backed search, role-aware accounts, and structured library workflows.
-                </p>
+                <p class="font-semibold text-midnight/85">Bentley Library</p>
+                <p class="mt-1">A modern library experience designed around how students actually discover, borrow, and research.</p>
             </div>
-            <div class="grid gap-2 text-sm text-white/70">
-                <a href="{% url 'search_results' %}" class="transition hover:text-white">Browse Books</a>
-                <a href="{% url 'advanced_search_results' %}" class="transition hover:text-white">Advanced Search</a>
-                <a href="{% url 'resource' %}" class="transition hover:text-white">Research Resources</a>
-            </div>
+            <p>Made by Patrick Liu.</p>
         </div>
     </footer>
 </body>

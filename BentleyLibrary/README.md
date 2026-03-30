@@ -1,12 +1,22 @@
 # Bentley Library
 
-A Django library platform for catalog search, copy-level circulation, holds, and role-aware accounts.
+A student-first library platform for Bentley School with fast catalog search, copy-level circulation, grounded AI recommendations, and real-book metadata.
 
 ## Stack
 
 - Python
 - Django
 - PostgreSQL or SQLite
+- Optional Gemini-powered intent extraction
+- Optional Go reranking service for low-latency recommendation scoring
+
+## What Makes It Different
+
+- Course-aware discovery instead of generic OPAC-style search
+- ISBN lookup with real cover and metadata enrichment
+- Student-facing recommendation flow grounded in the actual catalog
+- Custom Bentley-style homepage with availability, demand, and research-oriented entry points
+- Copy-level holds and circulation, not just title-level inventory
 
 ## Quick Start
 
@@ -64,8 +74,23 @@ Benchmark PostgreSQL full-text search:
 python manage.py benchmark_postgres_search --query python --query history --runs 10
 ```
 
+Run the Go reranker:
+
+```bash
+cd services/go-ranker
+go run .
+```
+
+Import a real catalog:
+
+```bash
+python manage.py import_real_books --per-topic 15
+```
+
 ## Notes
 
 - Django migrations are the source of truth for the schema.
 - PostgreSQL is the recommended production target.
 - `.env` is required and should never be committed.
+- The AI concierge uses a grounded flow: LLM query interpretation -> catalog retrieval -> Go/Python reranking.
+- Set `GEMINI_API_KEY` locally if you want the Gemini-enhanced path; otherwise the app falls back to the built-in local guide.

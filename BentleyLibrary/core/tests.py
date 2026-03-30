@@ -1,10 +1,12 @@
+import json
 from datetime import date, timedelta
 from io import StringIO
+from uuid import uuid4
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -19,7 +21,7 @@ class LibraryViewTestCase(TestCase):
         data = {
             "title": "Python 101",
             "author": "Jane Author",
-            "isbn": "1234567890123",
+            "isbn": str(uuid4().int)[:13],
             "published_date": date(2020, 1, 1),
             "publisher": "Example Press",
             "quantity": 3,
@@ -108,10 +110,10 @@ class CheckoutViewTests(LibraryViewTestCase):
         self.assertContains(response, "Please enter a valid email address.")
 
     def test_checkout_rejects_when_no_copies_are_available(self):
-        self.create_book(available_quantity=0)
+        book = self.create_book(available_quantity=0)
 
         response = self.client.post(
-            reverse("checkout", args=["1234567890123"]),
+            reverse("checkout", args=[book.isbn]),
             {
                 "first_name": "John",
                 "last_name": "Doe",
@@ -178,17 +180,17 @@ class CheckinViewTests(LibraryViewTestCase):
         self.assertContains(response, "Book not found in inventory.")
 
     def test_checkin_rejects_when_book_is_not_checked_out(self):
-        self.create_book(quantity=2, available_quantity=2)
+        book = self.create_book(quantity=2, available_quantity=2)
 
-        response = self.client.post(reverse("checkin"), {"isbn": "1234567890123"})
+        response = self.client.post(reverse("checkin"), {"isbn": book.isbn})
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "This book is not checked out.")
 
     def test_checkin_requires_matching_log_entry(self):
-        self.create_book(quantity=2, available_quantity=1)
+        book = self.create_book(quantity=2, available_quantity=1)
 
-        response = self.client.post(reverse("checkin"), {"isbn": "1234567890123"})
+        response = self.client.post(reverse("checkin"), {"isbn": book.isbn})
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "No check-out record found for this book.")
@@ -385,6 +387,47 @@ class AuthAndWorkflowTests(LibraryViewTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Hold placed successfully.")
         self.assertContains(response, user.username)
+
+    @override_settings(GO_RERANKER_URL="")
+    def test_ai_concierge_returns_local_fallback_matches(self):
+        self.create_book(title="Fast Fiction", genre="Young Adult Fiction")
+
+        response = self.client.post(
+            reverse("ai_concierge"),
+            data=json.dumps({"prompt": "I need a fast read"}),
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["mode"], "local-guide")
+        self.assertTrue(payload["books"])
+
+    @override_settings(GO_RERANKER_URL="")
+    @patch("core.ai.gemini_intent")
+    def test_ai_concierge_uses_grounded_llm_path_when_intent_available(self, mock_gemini_intent):
+        self.create_book(title="US History Reader", genre="History", summary="Primary sources and context")
+        self.create_book(title="Creative Writing Essays", genre="Writing")
+        mock_gemini_intent.return_value = {
+            "search_query": "history primary sources",
+            "course_focus": "History paper",
+            "mood": "serious",
+            "reading_level": "upper school",
+            "explanation": "These titles fit a history research assignment.",
+            "tags": ["history", "research"],
+        }
+
+        response = self.client.post(
+            reverse("ai_concierge"),
+            data=json.dumps({"prompt": "I need a book for a history paper"}),
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["mode"], "grounded-gemini-rag")
+        self.assertEqual(payload["suggested_query"], "history primary sources")
+        self.assertTrue(payload["books"])
 
 
 class ManagementCommandTests(TestCase):

@@ -3,103 +3,14 @@
 {% block title %}Advanced Search{% endblock %}
 
 {% block content %}
-<div class="container mx-auto mt-8">
-    <h1 class="text-3xl font-semibold mb-10">Advanced Search</h1>
-    <form class="w-full max-w-lg" action="{% url 'advanced_search_results' %}" method="GET">
-        <div class="mb-4">
-            <label for="search-type" class="block text-gray-700 font-bold mb-2">Search for:</label>
-            <select id="search-type" name="search_type" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
-                <option value="everything">Everything</option>
-                <option value="catalog">Library Catalog</option>
-                <option value="articles">Articles</option>
-                <option value="reserves">Course Reserves</option>
-            </select>
-        </div>
-
-        <div id="search-criteria">
-            <!-- Initial criteria field with field, operator, and search term -->
-            <div class="criteria">
-                <label for="search-type" class="block text-gray-700 font-bold">Search Filters:</label>
-                <div id="search-criteria">
-                    <!-- Initial criteria field with field, operator, and search term -->
-                    <div class="criteria">
-                        <!-- Initial criteria field with field, operator, and search term -->
-                        <div class="criteria flex items-center py-2">
-                            <select name="logical_operator[]" class="w-18 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 hidden mr-2">
-                                <option value="AND">AND</option>
-                                <option value="OR">OR</option>
-                                <option value="NOT">NOT</option>
-                            </select>
-                    
-                            <!-- Add spacing between selects using margin-right classes -->
-                            <select name="field[]" class="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 mr-2">
-                                <option value="any_field">Any field</option>
-                                <option value="title">Title</option>
-                                <option value="author">Author</option>
-                                <option value="publisher">Publisher</option>
-                                <option value="isbn">ISBN</option>
-                            </select>
-                    
-                            <select name="operator[]" class="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 mr-2">
-                                <option value="icontains">contains</option>
-                            </select>
-                    
-                            <input type="text" name="search_term[]" class="flex-grow min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 mr-2">
-                            <button type="button" class="px-3 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-700 remove-criteria">Remove</button>
-                        </div>
-                    </div>
-                </div>                   
-            </div>
-        </div>
-
-        <div class="mt-2">
-            <button type="button" class="px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-700 add-criteria">Add Line</button>
-        </div>
-
-        <div class="mb-6">
-            <label class="block text-gray-700 font-bold mb-2 mt-6">Date Range:</label>
-            <div class="grid grid-cols-1 gap-2">
-                <div>
-                    <label for="start-date" class="block text-gray-700 font-bold mb-2">Start Date:</label>
-                    <div class="grid grid-cols-3 gap-2">
-                        <input type="text" name="published_date_start" value="{{ published_date_start_filter }}" placeholder="YYYY-MM-DD" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400">
-                    </div>
-                </div>
-                <div>
-                    <label for="end-date" class="block text-gray-700 font-bold mb-2">End Date:</label>
-                    <div class="grid grid-cols-3 gap-2">
-                        <input type="text" name="published_date_end" value="{{ published_date_end_filter }}" placeholder="YYYY-MM-DD" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400">
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="mb-6 mt-10">
-            <button type="submit" class="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-700">Search</button>
-        </div>
-    </form>
-</div>
-
-<script>
-    // Maximum number of additional lines
-    const maxLines = 6;
-
-    document.querySelector('.add-criteria').addEventListener('click', function () {
-        const criteria = document.querySelectorAll('.criteria');
-        
-        // Check if the maximum limit is reached
-        if (criteria.length < maxLines) {
-            const lastCriteria = criteria[criteria.length - 1];
-            const newCriteria = lastCriteria.cloneNode(true);
-            
-            // Show the logical operator for additional rows
-            newCriteria.querySelector('select[name="logical_operator[]"]').classList.remove('hidden');
-            
-            lastCriteria.after(newCriteria);
-            newCriteria.querySelector('.remove-criteria').addEventListener('click', function () {
-                this.closest('.criteria').remove();
-            });
-        }
-    });
-</script>
+<section class="mx-auto max-w-4xl rounded-[2rem] shell-panel p-8 shadow-sm">
+    <p class="section-kicker">Advanced search</p>
+    <h1 class="mt-2 font-serif text-4xl text-midnight">Build a precise library query</h1>
+    <p class="mt-4 max-w-2xl text-sm leading-7 text-midnight/65">
+        This entry page is kept lightweight; the full structured builder and results surface live in the advanced results view.
+    </p>
+    <div class="mt-8">
+        <a href="{% url 'advanced_search_results' %}" class="primary-button">Open the advanced builder</a>
+    </div>
+</section>
 {% endblock %}

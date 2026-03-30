@@ -1,5 +1,7 @@
 import logging
+from collections import Counter
 from datetime import timedelta
+import json
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -7,10 +9,12 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.core.validators import validate_email
 from django.db import transaction
 from django.db.models import Q
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.generic import ListView
 
+from .ai import fallback_concierge
 from .models import (
     BookCopy,
     Bookinventory,
@@ -22,6 +26,7 @@ from .models import (
     LoanStatus,
     Log,
 )
+from .openlibrary import lookup_by_isbn
 from .search import search_books
 
 logger = logging.getLogger(__name__)
@@ -62,6 +67,76 @@ ROLE_MANAGE_LOANS = {
     LibraryRole.CURATOR,
     LibraryRole.ADMIN,
 }
+COURSE_TOPICS = {
+    "history": "History paper",
+    "biography": "Humanities research",
+    "science": "Science class",
+    "technology": "CS / AI",
+    "computer": "CS / AI",
+    "fiction": "Independent reading",
+    "fantasy": "Fast fiction",
+    "young adult": "Fast read",
+    "poetry": "English seminar",
+    "writing": "Essay inspiration",
+}
+
+
+def metadata_subjects(book):
+    if not isinstance(book.metadata, dict):
+        return []
+    subjects = book.metadata.get("subjects") or []
+    if isinstance(subjects, list):
+        return [str(subject).strip() for subject in subjects if subject]
+    return []
+
+
+def infer_course_tag(book):
+    haystack = " ".join(
+        [
+            book.genre or "",
+            book.summary or "",
+            book.description or "",
+            " ".join(metadata_subjects(book)[:6]),
+        ]
+    ).lower()
+    for keyword, label in COURSE_TOPICS.items():
+        if keyword in haystack:
+            return label
+    return "Student pick"
+
+
+def estimate_wait_label(book):
+    active_loans = max(book.quantity - book.available_quantity, 0)
+    if book.available_quantity > 0:
+        return "Available now"
+    if active_loans <= 1:
+        return "Likely back soon"
+    if active_loans <= 3:
+        return "About 1 to 2 weeks"
+    return "Waitlist moving slowly"
+
+
+def enrich_book_card(book):
+    tags = []
+    course_tag = infer_course_tag(book)
+    tags.append(course_tag)
+    if book.available_quantity > 0:
+        tags.append("Available now")
+    else:
+        tags.append("Waitlist")
+    if book.audience:
+        tags.append(book.audience)
+    if "young adult" in (book.genre or "").lower() or "fiction" in (book.genre or "").lower():
+        tags.append("Fast read")
+    if any(keyword in (book.summary or "").lower() for keyword in ["history", "science", "biography", "research"]):
+        tags.append("Research friendly")
+
+    book.course_tag = course_tag
+    book.quick_tags = tags[:4]
+    book.wait_label = estimate_wait_label(book)
+    book.primary_cta = "Borrow now" if book.available_quantity > 0 else "Place hold"
+    book.secondary_cta = "See details"
+    return book
 
 
 def extract_user_identity(request):
@@ -426,16 +501,18 @@ def search_results(request):
     }
 
     response = search_books(query=query, filters=filters, strategy=strategy, limit=200)
-    results = response.queryset
+    results_queryset = response.queryset
     active_loans = Loan.objects.filter(
-        inventory_id__in=results.values("id"),
+        inventory_id__in=results_queryset.values("id"),
         status__in=[LoanStatus.ACTIVE, LoanStatus.OVERDUE],
         returned_at__isnull=True,
     )
     borrowed_book_ids = list(active_loans.values_list("inventory_id", flat=True))
+    results = [enrich_book_card(book) for book in results_queryset[:200]]
 
     context = {
         "results": results,
+        "result_count": len(results),
         "query": query,
         "published_date_start_filter": filters["published_date_start"],
         "published_date_end_filter": filters["published_date_end"],
@@ -456,6 +533,7 @@ def search_results(request):
 
 def book_page(request, book_id):
     book = get_object_or_404(Bookinventory.objects.prefetch_related("copies", "holds"), id=book_id)
+    book = enrich_book_card(book)
     active_loans = book.loans.filter(
         status__in=[LoanStatus.ACTIVE, LoanStatus.OVERDUE],
         returned_at__isnull=True,
@@ -463,12 +541,18 @@ def book_page(request, book_id):
     holds = book.holds.filter(status__in=[HoldStatus.PENDING, HoldStatus.READY]).select_related(
         "requester"
     )
+    related_response = search_books(query=book.genre or book.author, strategy="indexed", limit=5)
+    related_books = [
+        enrich_book_card(candidate)
+        for candidate in related_response.queryset.exclude(id=book.id)[:4]
+    ]
     context = {
         "book": book,
         "borrowed_books": active_loans,
         "borrowed_book_ids": [book.id] if active_loans else [],
         "holds": holds,
         "copies": book.copies.order_by("barcode"),
+        "related_books": related_books,
     }
     return render(request, BOOK_PAGE_TEMPLATE, context)
 
@@ -496,23 +580,98 @@ def account_overview(request):
     role = getattr(getattr(request.user, "library_profile", None), "role", LibraryRole.PATRON)
     can_manage_loans = role in ROLE_MANAGE_LOANS or request.user.has_perm("core.manage_loans")
 
+    active_loans = request.user.loans.filter(
+        status__in=[LoanStatus.ACTIVE, LoanStatus.OVERDUE]
+    ).select_related("inventory", "copy")
+    hold_requests = request.user.hold_requests.filter(
+        status__in=[HoldStatus.PENDING, HoldStatus.READY]
+    ).select_related("inventory")
+    recommended = []
+    interest_terms = [hold.inventory.genre for hold in hold_requests[:2]] or [
+        loan.inventory.genre for loan in active_loans[:2]
+    ]
+    query = " ".join(term for term in interest_terms if term).strip()
+    if query:
+        recommended = [
+            enrich_book_card(book)
+            for book in search_books(query=query, strategy="indexed", limit=4).queryset[:4]
+        ]
+
     context = {
         "profile": getattr(request.user, "library_profile", None),
-        "active_loans": request.user.loans.filter(
-            status__in=[LoanStatus.ACTIVE, LoanStatus.OVERDUE]
-        ).select_related("inventory", "copy"),
-        "hold_requests": request.user.hold_requests.filter(
-            status__in=[HoldStatus.PENDING, HoldStatus.READY]
-        ).select_related("inventory"),
+        "active_loans": active_loans,
+        "hold_requests": hold_requests,
         "can_manage_loans": can_manage_loans,
+        "recommended_books": recommended,
     }
     return render(request, ACCOUNT_TEMPLATE, context)
 
 
 def index(request):
-    featured_books = Bookinventory.objects.order_by("title")[:8]
+    featured_books = [
+        enrich_book_card(book)
+        for book in Bookinventory.objects.exclude(image_url="").order_by("?")[:6]
+    ]
+    latest_books = [
+        enrich_book_card(book)
+        for book in Bookinventory.objects.order_by("-published_date", "title")[:5]
+    ]
+    student_picks = [
+        enrich_book_card(book)
+        for book in Bookinventory.objects.filter(
+        audience__in=["Upper School", "Middle School", "General"]
+    ).order_by("?")[:4]
+    ]
+    available_now = [
+        enrich_book_card(book)
+        for book in Bookinventory.objects.filter(available_quantity__gt=0).exclude(image_url="").order_by("?")[:4]
+    ]
+    most_wanted_ids = (
+        HoldRequest.objects.filter(status__in=[HoldStatus.PENDING, HoldStatus.READY])
+        .values_list("inventory_id", flat=True)
+    )
+    most_wanted = [
+        enrich_book_card(book)
+        for book in Bookinventory.objects.filter(id__in=most_wanted_ids).distinct()[:4]
+    ]
+    genre_counts = Counter(
+        genre for genre in Bookinventory.objects.values_list("genre", flat=True) if genre
+    )
+    trending_genres = [
+        {"name": name, "count": count}
+        for name, count in genre_counts.most_common(4)
+    ]
+    if not trending_genres:
+        trending_genres = [
+            {"name": "Student Favorites", "count": len(featured_books)},
+            {"name": "Research", "count": len(latest_books)},
+            {"name": "Fiction", "count": len(student_picks)},
+        ]
+    library_news = [
+        {
+            "title": "Research sprint season is here",
+            "body": "Use the advanced search builder to find stronger sources faster for seminar papers and capstones.",
+            "tag": "Study Tip",
+        },
+        {
+            "title": "New arrivals in the catalog",
+            "body": "Fresh fantasy, biography, and tech books are now mixed into the main collection.",
+            "tag": "New Shelf",
+        },
+        {
+            "title": "Try the AI librarian",
+            "body": "Ask for a quick recommendation and convert the answer into a deeper catalog search.",
+            "tag": "Beta",
+        },
+    ]
     context = {
         "featured_books": featured_books,
+        "latest_books": latest_books,
+        "student_picks": student_picks,
+        "available_now": available_now,
+        "most_wanted": most_wanted,
+        "trending_genres": trending_genres,
+        "library_news": library_news,
         "active_loans": Loan.objects.filter(
             status__in=[LoanStatus.ACTIVE, LoanStatus.OVERDUE]
         ).count(),
@@ -520,4 +679,70 @@ def index(request):
             status__in=[HoldStatus.PENDING, HoldStatus.READY]
         ).count(),
     }
+    if request.user.is_authenticated:
+        context["continue_loans"] = [
+            enrich_book_card(loan.inventory)
+            for loan in request.user.loans.filter(
+                status__in=[LoanStatus.ACTIVE, LoanStatus.OVERDUE]
+            ).select_related("inventory")[:3]
+        ]
+    else:
+        context["continue_loans"] = []
     return render(request, INDEX_TEMPLATE, context)
+
+
+def isbn_lookup(request):
+    isbn = request.GET.get("isbn", "").strip()
+    if not isbn:
+        return JsonResponse({"error": "ISBN is required."}, status=400)
+
+    existing = Bookinventory.objects.filter(isbn=isbn).first()
+    if existing:
+        return JsonResponse(
+            {
+                "source": "catalog",
+                "title": existing.title,
+                "author": existing.author,
+                "isbn": existing.isbn,
+                "publisher": existing.publisher,
+                "published_date": existing.published_date.isoformat(),
+                "image_url": existing.image_url,
+                "genre": existing.genre,
+                "summary": existing.summary,
+                "book_url": f"/book/{existing.id}/",
+            }
+        )
+
+    looked_up = lookup_by_isbn(isbn)
+    if not looked_up:
+        return JsonResponse({"error": "No book found for that ISBN."}, status=404)
+
+    return JsonResponse(
+        {
+            "source": "openlibrary",
+            "title": looked_up.title,
+            "author": looked_up.author,
+            "isbn": looked_up.isbn,
+            "publisher": looked_up.publisher,
+            "published_date": looked_up.published_date.isoformat(),
+            "image_url": looked_up.image_url,
+            "genre": looked_up.genre,
+            "summary": looked_up.summary,
+        }
+    )
+
+
+def ai_concierge(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required."}, status=405)
+
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON payload."}, status=400)
+
+    prompt = payload.get("prompt", "").strip()
+    if not prompt:
+        return JsonResponse({"error": "Prompt is required."}, status=400)
+
+    return JsonResponse(fallback_concierge(prompt))

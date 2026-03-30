@@ -6,3 +6,4 @@ __pycache__/
 BentleyLibrary/.env
 BentleyLibrary/.env.local
 BentleyLibraryBackup_*.sql
+BentleyLibrary/services/go-ranker/go-ranker

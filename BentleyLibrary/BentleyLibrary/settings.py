@@ -171,3 +171,7 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LOGIN_REDIRECT_URL = "account_overview"
 LOGOUT_REDIRECT_URL = "index"
+
+GEMINI_API_KEY = config("GEMINI_API_KEY", default="").strip()
+GEMINI_MODEL = config("GEMINI_MODEL", default="gemini-2.5-flash").strip()
+GO_RERANKER_URL = config("GO_RERANKER_URL", default="http://127.0.0.1:8088/rank").strip()

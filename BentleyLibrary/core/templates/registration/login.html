@@ -4,31 +4,31 @@
 
 {% block content %}
 <section class="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-    <div class="rounded-[2rem] border border-black/5 bg-ink p-8 text-white shadow-haze">
-        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-white/50">Library Access</p>
-        <h1 class="mt-2 font-serif text-5xl leading-tight">Sign in to manage holds, loans, and borrower activity.</h1>
+    <div class="rounded-[2rem] shell-dark p-8 text-white shadow-cinematic">
+        <p class="section-kicker !text-white/45">Library access</p>
+        <h1 class="mt-2 font-serif text-5xl leading-tight">Sign in to manage holds, loans, and everything that should feel personal.</h1>
         <p class="mt-5 text-sm leading-7 text-white/72">
-            Public visitors can browse the catalog, but account-specific actions like placing holds and viewing borrower status require authentication.
+            Public visitors can browse the catalog, but holds, account activity, and circulation actions live behind sign-in.
         </p>
         <div class="mt-8 space-y-4">
             <div class="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
-                <p class="font-semibold">Patron workflows</p>
-                <p class="mt-2 text-sm text-white/70">Track your active loans, view holds, and move directly from search into borrowing actions.</p>
+                <p class="font-semibold">Patron view</p>
+                <p class="mt-2 text-sm text-white/70">Track current loans, view active holds, and jump back into books you were already exploring.</p>
             </div>
             <div class="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
-                <p class="font-semibold">Staff workflows</p>
-                <p class="mt-2 text-sm text-white/70">Inspect copy-level availability and circulation status from the same catalog surface.</p>
+                <p class="font-semibold">Staff view</p>
+                <p class="mt-2 text-sm text-white/70">Inspect copy-level availability and circulation status from the same product surface.</p>
             </div>
         </div>
     </div>
 
-    <div class="rounded-[2rem] border border-black/5 bg-white/78 p-8 shadow-sm">
-        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-brass">Authentication</p>
-        <h2 class="mt-2 font-serif text-4xl text-ink">Log In</h2>
+    <div class="rounded-[2rem] shell-panel p-8 shadow-sm">
+        <p class="section-kicker">Authentication</p>
+        <h2 class="mt-2 font-serif text-4xl text-midnight">Log in</h2>
         <form method="post" class="mt-8 space-y-4">
             {% csrf_token %}
             {{ form.as_p }}
-            <button type="submit" class="w-full rounded-[1.5rem] bg-ink px-5 py-3 text-sm font-semibold text-white transition hover:bg-pine">Log In</button>
+            <button type="submit" class="primary-button w-full">Log in</button>
         </form>
     </div>
 </section>

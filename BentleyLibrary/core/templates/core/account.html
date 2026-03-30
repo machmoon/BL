@@ -4,26 +4,26 @@
 
 {% block content %}
 <section class="space-y-6">
-    <div class="rounded-[2rem] border border-black/5 bg-white/74 p-8 shadow-sm">
+    <div class="rounded-[2rem] shell-panel p-8 shadow-sm">
         <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-brass">Borrower Profile</p>
-                <h1 class="mt-2 font-serif text-4xl text-ink">My Account</h1>
+                <p class="section-kicker">Borrower profile</p>
+                <h1 class="mt-2 font-serif text-4xl text-midnight">My library account</h1>
                 {% if profile %}
-                <p class="mt-3 text-sm text-ink/65">Role: <span class="font-semibold capitalize text-ink">{{ profile.role }}</span> · Card {{ profile.card_number }}</p>
+                <p class="mt-3 text-sm text-midnight/65">Role: <span class="font-semibold capitalize text-midnight">{{ profile.role }}</span> · Card {{ profile.card_number }}</p>
                 {% else %}
-                <p class="mt-3 text-sm text-ink/65">Your library profile will be created automatically on first login.</p>
+                <p class="mt-3 text-sm text-midnight/65">Your library profile will be created automatically on first login.</p>
                 {% endif %}
             </div>
             {% if profile %}
             <div class="grid gap-3 sm:grid-cols-2">
-                <div class="rounded-[1.5rem] bg-mist px-5 py-4">
-                    <p class="text-xs uppercase tracking-[0.2em] text-ink/45">Loan Limit</p>
-                    <p class="mt-2 font-serif text-3xl text-ink">{{ profile.max_active_loans }}</p>
+                <div class="rounded-[1.4rem] bg-white px-5 py-4 shadow-sm">
+                    <p class="section-kicker">Loan limit</p>
+                    <p class="mt-2 font-serif text-3xl text-midnight">{{ profile.max_active_loans }}</p>
                 </div>
-                <div class="rounded-[1.5rem] bg-mist px-5 py-4">
-                    <p class="text-xs uppercase tracking-[0.2em] text-ink/45">Status</p>
-                    <p class="mt-2 text-sm font-semibold text-ink">{% if profile.is_email_verified %}Verified{% else %}Pending Verification{% endif %}</p>
+                <div class="rounded-[1.4rem] bg-white px-5 py-4 shadow-sm">
+                    <p class="section-kicker">Status</p>
+                    <p class="mt-2 text-sm font-semibold text-midnight">{% if profile.is_email_verified %}Verified{% else %}Pending verification{% endif %}</p>
                 </div>
             </div>
             {% endif %}
@@ -31,43 +31,47 @@
     </div>
 
     <div class="grid gap-6 xl:grid-cols-[1fr_1fr]">
-        <div class="rounded-[2rem] border border-black/5 bg-white/74 p-6 shadow-sm">
+        <div class="rounded-[2rem] shell-panel p-6 shadow-sm">
             <div class="flex items-center justify-between">
-                <h2 class="font-serif text-3xl text-ink">Active Loans</h2>
-                <span class="rounded-full bg-tide px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-ink/55">{{ active_loans|length }} checked out</span>
+                <h2 class="font-serif text-3xl text-midnight">Active loans</h2>
+                <span class="rounded-full bg-oat px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-midnight/60">{{ active_loans|length }} checked out</span>
             </div>
             <div class="mt-5 space-y-4">
                 {% for loan in active_loans %}
-                <div class="reveal-card rounded-[1.5rem] border border-black/5 bg-white p-5 shadow-sm">
+                <div class="soft-card rounded-[1.5rem] bg-white p-5 shadow-sm">
                     <div class="flex items-start justify-between gap-4">
                         <div>
-                            <p class="font-serif text-2xl text-ink">{{ loan.inventory.title }}</p>
-                            <p class="mt-2 text-sm text-ink/60">Copy {{ loan.copy.barcode }}</p>
+                            <p class="font-serif text-2xl text-midnight">{{ loan.inventory.title }}</p>
+                            <p class="mt-2 text-sm text-midnight/60">Copy {{ loan.copy.barcode }}</p>
+                            <p class="mt-2 text-sm text-midnight/50">{{ loan.inventory.author }}</p>
                         </div>
-                        <span class="rounded-full bg-sand px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-ink/60">Due {{ loan.due_at|date:"M j" }}</span>
+                        <span class="rounded-full bg-sage px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-forest">Due {{ loan.due_at|date:"M j" }}</span>
                     </div>
+                    <a href="{% url 'book_page' loan.inventory.id %}" class="mt-4 inline-flex text-sm font-semibold text-midnight/70 transition hover:text-midnight">Open book details</a>
                 </div>
                 {% empty %}
-                <div class="rounded-[1.5rem] border border-dashed border-black/10 px-5 py-8 text-center text-ink/50">
+                <div class="rounded-[1.5rem] border border-dashed border-black/10 px-5 py-8 text-center text-midnight/50">
                     No active loans right now.
                 </div>
                 {% endfor %}
             </div>
         </div>
 
-        <div class="rounded-[2rem] border border-black/5 bg-white/74 p-6 shadow-sm">
+        <div class="rounded-[2rem] shell-panel p-6 shadow-sm">
             <div class="flex items-center justify-between">
-                <h2 class="font-serif text-3xl text-ink">Active Holds</h2>
-                <span class="rounded-full bg-mist px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-ink/55">{{ hold_requests|length }} queued</span>
+                <h2 class="font-serif text-3xl text-midnight">Active holds</h2>
+                <span class="rounded-full bg-oat px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-midnight/60">{{ hold_requests|length }} queued</span>
             </div>
             <div class="mt-5 space-y-4">
                 {% for hold in hold_requests %}
-                <div class="reveal-card rounded-[1.5rem] border border-black/5 bg-white p-5 shadow-sm">
-                    <p class="font-serif text-2xl text-ink">{{ hold.inventory.title }}</p>
-                    <p class="mt-2 text-sm capitalize text-ink/60">Status: {{ hold.status }}</p>
+                <div class="soft-card rounded-[1.5rem] bg-white p-5 shadow-sm">
+                    <p class="font-serif text-2xl text-midnight">{{ hold.inventory.title }}</p>
+                    <p class="mt-2 text-sm capitalize text-midnight/60">Status: {{ hold.status }}</p>
+                    <p class="mt-2 text-sm text-midnight/50">{{ hold.inventory.author }}</p>
+                    <a href="{% url 'book_page' hold.inventory.id %}" class="mt-4 inline-flex text-sm font-semibold text-midnight/70 transition hover:text-midnight">Open hold details</a>
                 </div>
                 {% empty %}
-                <div class="rounded-[1.5rem] border border-dashed border-black/10 px-5 py-8 text-center text-ink/50">
+                <div class="rounded-[1.5rem] border border-dashed border-black/10 px-5 py-8 text-center text-midnight/50">
                     No active holds right now.
                 </div>
                 {% endfor %}
@@ -75,12 +79,40 @@
         </div>
     </div>
 
+    <div class="rounded-[2rem] shell-panel p-6 shadow-sm">
+        <div class="flex items-center justify-between gap-4">
+            <div>
+                <p class="section-kicker">For you next</p>
+                <h2 class="mt-2 font-serif text-3xl text-midnight">Keep your reading momentum going</h2>
+            </div>
+            <a href="{% url 'search_results' %}" class="text-sm font-semibold text-midnight/65 transition hover:text-midnight">Browse catalog</a>
+        </div>
+        <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {% for book in recommended_books %}
+            <a href="{% url 'book_page' book.id %}" class="soft-card rounded-[1.5rem] bg-white p-5 shadow-sm">
+                <p class="section-kicker">{{ book.course_tag }}</p>
+                <h3 class="mt-3 font-serif text-2xl leading-tight text-midnight">{{ book.title }}</h3>
+                <p class="mt-2 text-sm text-midnight/60">{{ book.author }}</p>
+                <div class="mt-4 flex flex-wrap gap-2">
+                    {% for tag in book.quick_tags %}
+                    <span class="chip">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+            </a>
+            {% empty %}
+            <div class="rounded-[1.5rem] border border-dashed border-black/10 px-5 py-8 text-center text-midnight/50 md:col-span-2 xl:col-span-4">
+                Borrow or hold a few books and this section will start tailoring itself to your patterns.
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
     {% if can_manage_loans %}
-    <div class="rounded-[2rem] border border-black/5 bg-ink p-6 text-white shadow-haze">
-        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-white/50">Staff Access</p>
-        <h2 class="mt-2 font-serif text-3xl">Circulation tools are available from search and title detail views.</h2>
-        <p class="mt-3 max-w-3xl text-sm leading-7 text-white/70">
-            Your role includes circulation permissions, so you can inspect copy status, manage holds, and process book check-ins or checkouts directly from the catalog.
+    <div class="rounded-[2rem] shell-dark p-6 text-white shadow-cinematic">
+        <p class="section-kicker !text-white/45">Staff access</p>
+        <h2 class="mt-2 font-serif text-3xl">Circulation tools are available throughout the catalog.</h2>
+        <p class="mt-3 max-w-3xl text-sm leading-7 text-white/72">
+            Your role includes circulation permissions, so you can inspect copy status, manage holds, and process check-ins or checkouts directly from search and title pages.
         </p>
     </div>
     {% endif %}

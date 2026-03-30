@@ -3,120 +3,154 @@
 {% block title %}Book Details{% endblock %}
 
 {% block content %}
-<section class="grid gap-6 xl:grid-cols-[0.72fr_1.28fr_0.9fr]">
-    <div class="rounded-[2rem] border border-black/5 bg-white/70 p-6 shadow-sm">
-        {% if book.image_url %}
-        <img src="{{ book.image_url }}" alt="{{ book.title }}" class="h-[420px] w-full rounded-[1.5rem] object-cover">
-        {% else %}
-        <div class="flex h-[420px] items-center justify-center rounded-[1.5rem] bg-gradient-to-br from-tide to-mist text-center">
-            <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-ink/40">{{ book.genre|default:"Library Catalog" }}</p>
-                <p class="mt-3 font-serif text-3xl text-ink">{{ book.title }}</p>
+<section class="grid gap-6 xl:grid-cols-[0.68fr_1.12fr_0.9fr]">
+    <div class="rounded-[2rem] shell-panel p-6 shadow-sm">
+        <div class="overflow-hidden rounded-[1.5rem] bg-oat">
+            {% if book.image_url %}
+            <img src="{{ book.image_url }}" alt="{{ book.title }}" class="h-[460px] w-full object-cover">
+            {% else %}
+            <div class="flex h-[460px] items-center justify-center bg-gradient-to-br from-oat to-paper px-8 text-center">
+                <div>
+                    <p class="section-kicker">{{ book.genre|default:"Library catalog" }}</p>
+                    <p class="mt-3 font-serif text-3xl text-midnight">{{ book.title }}</p>
+                </div>
             </div>
+            {% endif %}
         </div>
-        {% endif %}
     </div>
 
-    <div class="rounded-[2rem] border border-black/5 bg-white/75 p-8 shadow-sm">
-        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-brass">{{ book.genre|default:"General Collection" }}</p>
-        <h1 class="mt-3 font-serif text-5xl leading-tight text-ink">{{ book.title }}</h1>
-        <p class="mt-4 text-lg text-ink/65">{{ book.author }}</p>
+    <div class="rounded-[2rem] shell-panel p-8 shadow-sm">
+        <p class="section-kicker">{{ book.course_tag }}</p>
+        <h1 class="mt-3 font-serif text-5xl leading-tight text-midnight">{{ book.title }}</h1>
+        <p class="mt-4 text-lg text-midnight/68">{{ book.author }}</p>
+        <div class="mt-5 flex flex-wrap gap-2">
+            {% for tag in book.quick_tags %}
+            <span class="chip">{{ tag }}</span>
+            {% endfor %}
+        </div>
 
         <div class="mt-8 grid gap-4 sm:grid-cols-2">
-            <div class="rounded-[1.5rem] bg-mist p-4">
-                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-ink/45">ISBN</p>
-                <p class="mt-2 text-sm font-semibold text-ink">{{ book.isbn }}</p>
+            <div class="rounded-[1.4rem] bg-white p-4 shadow-sm">
+                <p class="section-kicker">ISBN</p>
+                <p class="mt-2 text-sm font-semibold text-midnight">{{ book.isbn }}</p>
             </div>
-            <div class="rounded-[1.5rem] bg-mist p-4">
-                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-ink/45">Publisher</p>
-                <p class="mt-2 text-sm font-semibold text-ink">{{ book.publisher }}</p>
+            <div class="rounded-[1.4rem] bg-white p-4 shadow-sm">
+                <p class="section-kicker">Publisher</p>
+                <p class="mt-2 text-sm font-semibold text-midnight">{{ book.publisher }}</p>
             </div>
-            <div class="rounded-[1.5rem] bg-mist p-4">
-                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-ink/45">Audience</p>
-                <p class="mt-2 text-sm font-semibold text-ink">{{ book.audience|default:"General" }}</p>
+            <div class="rounded-[1.4rem] bg-white p-4 shadow-sm">
+                <p class="section-kicker">Audience</p>
+                <p class="mt-2 text-sm font-semibold text-midnight">{{ book.audience|default:"General" }}</p>
             </div>
-            <div class="rounded-[1.5rem] bg-mist p-4">
-                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-ink/45">Language</p>
-                <p class="mt-2 text-sm font-semibold text-ink">{{ book.language|default:"English" }}</p>
+            <div class="rounded-[1.4rem] bg-white p-4 shadow-sm">
+                <p class="section-kicker">Language</p>
+                <p class="mt-2 text-sm font-semibold text-midnight">{{ book.language|default:"English" }}</p>
             </div>
         </div>
 
-        <div class="mt-8 rounded-[1.5rem] border border-black/5 bg-white p-5">
-            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-brass">Description</p>
-            <p class="mt-3 text-sm leading-7 text-ink/70">{{ book.description }}</p>
+        <div class="mt-8 rounded-[1.5rem] bg-white p-5 shadow-sm">
+            <p class="section-kicker">Why students might grab this</p>
+            <p class="mt-3 text-sm leading-7 text-midnight/70">
+                Best for <span class="font-semibold text-midnight">{{ book.course_tag|lower }}</span>. {% if book.available_quantity > 0 %}There are copies ready now, so this one is immediately borrowable.{% else %}Right now it is in demand, so a hold is the right next action.{% endif %}
+            </p>
+            <p class="mt-5 section-kicker">Description</p>
+            <p class="mt-3 text-sm leading-7 text-midnight/68">{{ book.description }}</p>
             {% if book.summary %}
-            <p class="mt-4 border-t border-black/5 pt-4 text-sm leading-7 text-ink/60">{{ book.summary }}</p>
+            <p class="mt-4 border-t border-black/5 pt-4 text-sm leading-7 text-midnight/60">{{ book.summary }}</p>
             {% endif %}
         </div>
     </div>
 
     <div class="space-y-6">
-        <div class="rounded-[2rem] border border-black/5 bg-ink p-6 text-white shadow-haze">
-            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-white/50">Circulation Snapshot</p>
+        <div class="rounded-[2rem] shell-dark p-6 text-white shadow-cinematic">
+            <p class="section-kicker !text-white/45">Circulation snapshot</p>
             <div class="mt-5 grid gap-4">
-                <div class="rounded-[1.5rem] bg-white/8 p-4">
-                    <p class="text-xs uppercase tracking-[0.2em] text-white/55">Available</p>
+                <div class="rounded-[1.4rem] bg-white/7 p-4">
+                    <p class="section-kicker !text-white/45">Available</p>
                     <p class="mt-2 font-serif text-3xl">{{ book.available_quantity }}</p>
                 </div>
-                <div class="rounded-[1.5rem] bg-white/8 p-4">
-                    <p class="text-xs uppercase tracking-[0.2em] text-white/55">Total Copies</p>
+                <div class="rounded-[1.4rem] bg-white/7 p-4">
+                    <p class="section-kicker !text-white/45">Total copies</p>
                     <p class="mt-2 font-serif text-3xl">{{ book.quantity }}</p>
                 </div>
             </div>
+            <div class="mt-4 rounded-[1.4rem] border border-white/10 bg-white/6 p-4">
+                <p class="section-kicker !text-white/45">Student-facing status</p>
+                <p class="mt-2 text-lg font-semibold">{{ book.wait_label }}</p>
+            </div>
             <div class="mt-6 grid gap-3">
-                <a href="{% url 'checkout' book.isbn %}" class="rounded-[1.5rem] bg-white px-4 py-3 text-center text-sm font-semibold text-ink transition hover:bg-mist">Check Out</a>
-                <a href="{% url 'checkin' %}" class="rounded-[1.5rem] border border-white/15 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-white/5">Check In</a>
+                <a href="{% url 'checkout' book.isbn %}" class="rounded-full bg-white px-4 py-3 text-center text-sm font-semibold text-midnight transition hover:bg-paper">{{ book.primary_cta }}</a>
+                <a href="{% url 'checkin' %}" class="rounded-full border border-white/10 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-white/8">Check in</a>
                 {% if user.is_authenticated %}
                 <form method="post" action="{% url 'place_hold' book.id %}">
                     {% csrf_token %}
-                    <button type="submit" class="w-full rounded-[1.5rem] bg-coral px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90">Place Hold</button>
+                    <button type="submit" class="w-full rounded-full bg-coral px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90">{% if book.available_quantity > 0 %}Save a backup hold{% else %}Join the waitlist{% endif %}</button>
                 </form>
                 {% endif %}
             </div>
         </div>
 
-        <div class="rounded-[2rem] border border-black/5 bg-white/75 p-6 shadow-sm">
-            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-brass">Active Loans</p>
-            <ul class="mt-4 space-y-3 text-sm text-ink/68">
+        <div class="rounded-[2rem] shell-panel p-6 shadow-sm">
+            <p class="section-kicker">Active loans</p>
+            <ul class="mt-4 space-y-3 text-sm text-midnight/68">
                 {% for loan in borrowed_books %}
-                <li class="rounded-[1.25rem] bg-mist p-4">
-                    <p class="font-semibold text-ink">{{ loan.borrower_email_snapshot }}</p>
+                <li class="rounded-[1.2rem] bg-white p-4 shadow-sm">
+                    <p class="font-semibold text-midnight">{{ loan.borrower_email_snapshot }}</p>
                     {% if loan.copy %}
-                    <p class="mt-1 text-xs uppercase tracking-[0.16em] text-ink/45">{{ loan.copy.barcode }}</p>
+                    <p class="mt-1 text-xs uppercase tracking-[0.16em] text-midnight/45">{{ loan.copy.barcode }}</p>
                     {% endif %}
                 </li>
                 {% empty %}
-                <li class="rounded-[1.25rem] border border-dashed border-black/10 p-4 text-ink/50">No active loans.</li>
+                <li class="rounded-[1.2rem] border border-dashed border-black/10 p-4 text-midnight/50">No active loans.</li>
                 {% endfor %}
             </ul>
         </div>
 
-        <div class="rounded-[2rem] border border-black/5 bg-white/75 p-6 shadow-sm">
-            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-brass">Holds and Copies</p>
+        <div class="rounded-[2rem] shell-panel p-6 shadow-sm">
+            <p class="section-kicker">Holds and copies</p>
             <div class="mt-4 space-y-4">
                 <div>
-                    <p class="mb-2 text-sm font-semibold text-ink">Holds</p>
-                    <ul class="space-y-2 text-sm text-ink/65">
+                    <p class="mb-2 text-sm font-semibold text-midnight">Hold queue</p>
+                    <ul class="space-y-2 text-sm text-midnight/65">
                         {% for hold in holds %}
-                        <li class="rounded-[1rem] bg-mist px-4 py-3">{{ hold.requester.username }} <span class="text-ink/45">({{ hold.status }})</span></li>
+                        <li class="rounded-[1rem] bg-white px-4 py-3 shadow-sm">{{ hold.requester.username }} <span class="text-midnight/45">({{ hold.status }})</span></li>
                         {% empty %}
-                        <li class="rounded-[1rem] border border-dashed border-black/10 px-4 py-3 text-ink/50">No active holds.</li>
+                        <li class="rounded-[1rem] border border-dashed border-black/10 px-4 py-3 text-midnight/50">No active holds.</li>
                         {% endfor %}
                     </ul>
                 </div>
                 <div>
-                    <p class="mb-2 text-sm font-semibold text-ink">Copies</p>
-                    <ul class="space-y-2 text-sm text-ink/65">
+                    <p class="mb-2 text-sm font-semibold text-midnight">Copy status</p>
+                    <ul class="space-y-2 text-sm text-midnight/65">
                         {% for copy in copies %}
                         <li class="flex items-center justify-between rounded-[1rem] bg-white px-4 py-3 shadow-sm">
                             <span>{{ copy.barcode }}</span>
-                            <span class="rounded-full bg-tide px-3 py-1 text-xs font-semibold text-ink/60">{{ copy.get_status_display }}</span>
+                            <span class="rounded-full bg-oat px-3 py-1 text-xs font-semibold text-midnight/60">{{ copy.get_status_display }}</span>
                         </li>
                         {% empty %}
-                        <li class="rounded-[1rem] border border-dashed border-black/10 px-4 py-3 text-ink/50">No copies provisioned yet.</li>
+                        <li class="rounded-[1rem] border border-dashed border-black/10 px-4 py-3 text-midnight/50">No copies provisioned yet.</li>
                         {% endfor %}
                     </ul>
                 </div>
+            </div>
+        </div>
+
+        <div class="rounded-[2rem] shell-panel p-6 shadow-sm">
+            <p class="section-kicker">You might also want</p>
+            <div class="mt-4 space-y-3">
+                {% for related in related_books %}
+                <a href="{% url 'book_page' related.id %}" class="soft-card block rounded-[1.25rem] bg-white p-4 shadow-sm">
+                    <p class="font-semibold text-midnight">{{ related.title }}</p>
+                    <p class="mt-1 text-sm text-midnight/60">{{ related.author }}</p>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        {% for tag in related.quick_tags %}
+                        <span class="chip">{{ tag }}</span>
+                        {% endfor %}
+                    </div>
+                </a>
+                {% empty %}
+                <p class="rounded-[1.25rem] border border-dashed border-black/10 px-4 py-3 text-sm text-midnight/50">No related books surfaced yet.</p>
+                {% endfor %}
             </div>
         </div>
     </div>

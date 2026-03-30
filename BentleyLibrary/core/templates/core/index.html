@@ -3,122 +3,379 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-<section class="relative overflow-hidden rounded-[2rem] border border-black/5 bg-white/70 px-6 py-10 shadow-haze sm:px-10 lg:px-12">
-    <div class="absolute inset-y-0 right-0 hidden w-1/2 bg-gradient-to-l from-tide/70 via-transparent to-transparent lg:block"></div>
-    <div class="relative grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-        <div>
-            <p class="inline-flex items-center rounded-full border border-black/10 bg-white/85 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-ink/60">
-                Library Discovery Platform
-            </p>
-            <h1 class="mt-6 max-w-3xl font-serif text-5xl leading-tight text-ink sm:text-6xl">
-                Quietly powerful search and circulation for a modern school library.
+<section class="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+    <div class="relative overflow-hidden rounded-[2rem] shell-panel px-7 py-8 shadow-cinematic sm:px-10 sm:py-10">
+        <div class="absolute -right-20 -top-16 h-56 w-56 rounded-full bg-brass/10 blur-3xl"></div>
+        <div class="absolute bottom-0 right-20 h-48 w-48 rounded-full bg-sage/30 blur-3xl"></div>
+        <div class="relative">
+            <span class="chip">Bentley students first</span>
+            <h1 class="mt-6 max-w-4xl font-serif text-5xl leading-tight text-midnight sm:text-6xl">
+                A library homepage that feels more like a great campus product than a dusty catalog.
             </h1>
-            <p class="mt-6 max-w-2xl text-lg leading-8 text-ink/70">
-                Browse a live catalog, inspect copy-level inventory, and explore search strategies ranging from baseline filters to indexed retrieval and hybrid ranking.
+            <p class="mt-6 max-w-2xl text-lg leading-8 text-midnight/70">
+                Find class books fast, discover what people at Bentley are actually reading, check live availability, and get a quick recommendation when you are not sure where to begin.
             </p>
             <div class="mt-8 flex flex-wrap gap-3">
-                <a href="{% url 'search_results' %}" class="rounded-full bg-ink px-6 py-3 text-sm font-semibold text-white transition hover:bg-pine">
-                    Browse the Catalog
-                </a>
-                <a href="{% url 'advanced_search_results' %}" class="rounded-full border border-black/10 bg-white/85 px-6 py-3 text-sm font-semibold text-ink transition hover:bg-white">
-                    Run Advanced Search
-                </a>
+                <a href="{% url 'search_results' %}" class="primary-button">Browse the catalog</a>
+                <a href="{% url 'advanced_search_results' %}" class="secondary-button">Build a precise search</a>
+            </div>
+            <div class="mt-10 grid gap-4 md:grid-cols-3">
+                <div class="rounded-[1.5rem] bg-white/88 p-5 shadow-sm">
+                    <p class="section-kicker">Books out now</p>
+                    <p class="mt-3 font-serif text-4xl text-midnight">{{ active_loans }}</p>
+                    <p class="mt-2 text-sm text-midnight/60">Current loans moving through the collection.</p>
+                </div>
+                <div class="rounded-[1.5rem] bg-white/88 p-5 shadow-sm">
+                    <p class="section-kicker">Hold queue</p>
+                    <p class="mt-3 font-serif text-4xl text-midnight">{{ active_holds }}</p>
+                    <p class="mt-2 text-sm text-midnight/60">Titles students are already waiting on.</p>
+                </div>
+                <div class="rounded-[1.5rem] shell-dark p-5 text-white shadow-sm">
+                    <p class="section-kicker !text-white/50">Best for</p>
+                    <p class="mt-3 font-serif text-2xl">Research, fast reads, and real discovery</p>
+                    <p class="mt-2 text-sm text-white/70">Designed around actual student habits, not library jargon.</p>
+                </div>
             </div>
         </div>
+    </div>
 
-        <div class="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
-            <div class="reveal-card rounded-[1.5rem] border border-black/5 bg-white/85 p-6 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-blue-600">Active Loans</p>
-                <p class="mt-3 font-serif text-4xl text-ink">{{ active_loans }}</p>
-                <p class="mt-2 text-sm text-ink/60">Current circulation items checked out across the catalog.</p>
-            </div>
-            <div class="reveal-card rounded-[1.5rem] border border-black/5 bg-white/85 p-6 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-600">Active Holds</p>
-                <p class="mt-3 font-serif text-4xl text-ink">{{ active_holds }}</p>
-                <p class="mt-2 text-sm text-ink/60">Pending reservations ready for librarian follow-up.</p>
-            </div>
-            <div class="reveal-card rounded-[1.5rem] border border-black/5 bg-white/85 p-6 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-coral">Search Modes</p>
-                <p class="mt-3 font-serif text-2xl text-ink">Baseline, Indexed, Hybrid</p>
-                <p class="mt-2 text-sm text-ink/60">Switch strategies directly in the global search bar above.</p>
-            </div>
+    <div class="grid gap-6">
+        <div class="rounded-[2rem] shell-dark p-7 text-white shadow-cinematic">
+            <p class="section-kicker !text-white/45">Ask Bentley Library</p>
+            <h2 class="mt-3 font-serif text-3xl">What should I read for this?</h2>
+            <p class="mt-3 text-sm leading-6 text-white/72">
+                Try “I need a history source,” “give me a fast read,” or “something like The Hunger Games.”
+            </p>
+            <form id="ai-concierge-form" class="mt-5 space-y-3">
+                {% csrf_token %}
+                <textarea id="ai-prompt" rows="3" class="field-input !border-white/10 !bg-white/8 !text-white placeholder:!text-white/35" placeholder="I need a book for a history paper that is interesting and not too dry."></textarea>
+                <button type="submit" class="rounded-full bg-white px-5 py-3 text-sm font-semibold text-midnight transition hover:bg-paper">Ask the library</button>
+            </form>
+            <div id="ai-results" class="mt-4 hidden rounded-[1.5rem] border border-white/10 bg-white/6 p-4"></div>
+        </div>
+
+        <div class="rounded-[2rem] shell-panel p-7 shadow-sm">
+            <p class="section-kicker">ISBN lookup</p>
+            <h2 class="mt-3 font-serif text-3xl text-midnight">Scan the barcode feeling</h2>
+            <p class="mt-3 text-sm leading-6 text-midnight/65">
+                Paste an ISBN like you just scanned a book at the shelf and we will pull its cover and metadata.
+            </p>
+            <form id="isbn-lookup-form" class="mt-5 flex flex-col gap-3 sm:flex-row">
+                <input id="isbn-input" type="text" class="field-input flex-1" placeholder="9780141439518">
+                <button type="submit" class="primary-button">Look up</button>
+            </form>
+            <div id="isbn-result" class="mt-4 hidden rounded-[1.5rem] bg-white p-4 shadow-sm"></div>
         </div>
     </div>
 </section>
 
-<section class="mt-10 grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-    <div class="rounded-[2rem] border border-black/5 bg-white/70 p-8 shadow-sm">
-        <div class="flex items-center justify-between gap-4">
+<section class="mt-8 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+    <div class="rounded-[2rem] shell-dark p-8 text-white shadow-cinematic">
+        <p class="section-kicker !text-white/45">Quick starts</p>
+        <h2 class="mt-2 font-serif text-3xl">What students usually need first</h2>
+        <div class="mt-6 grid gap-3">
+            <a href="{% url 'search_results' %}?q=history&strategy=indexed" class="rounded-[1.35rem] border border-white/10 bg-white/6 p-4 transition hover:bg-white/10">
+                <p class="font-semibold">Find a history paper source</p>
+                <p class="mt-1 text-sm text-white/68">A fast route into research-friendly books.</p>
+            </a>
+            <a href="{% url 'search_results' %}?q=young+adult&strategy=indexed" class="rounded-[1.35rem] border border-white/10 bg-white/6 p-4 transition hover:bg-white/10">
+                <p class="font-semibold">Grab a fast read</p>
+                <p class="mt-1 text-sm text-white/68">Good when you want something engaging without a huge lift.</p>
+            </a>
+            <a href="{% url 'search_results' %}?q=computer+science&strategy=indexed" class="rounded-[1.35rem] border border-white/10 bg-white/6 p-4 transition hover:bg-white/10">
+                <p class="font-semibold">Browse CS and AI books</p>
+                <p class="mt-1 text-sm text-white/68">Readable technical books and idea-driven nonfiction.</p>
+            </a>
+        </div>
+
+        {% if continue_loans %}
+        <div class="mt-8 rounded-[1.5rem] border border-white/10 bg-white/6 p-5">
+            <p class="section-kicker !text-white/45">Continue where you left off</p>
+            <div class="mt-4 space-y-3">
+                {% for book in continue_loans %}
+                <a href="{% url 'book_page' book.id %}" class="flex items-center justify-between gap-4 rounded-[1.2rem] bg-white/6 px-4 py-3 transition hover:bg-white/10">
+                    <div>
+                        <p class="font-semibold">{{ book.title }}</p>
+                        <p class="mt-1 text-sm text-white/62">{{ book.author }}</p>
+                    </div>
+                    <span class="rounded-full border border-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/62">{{ book.wait_label }}</span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="rounded-[2rem] shell-panel p-8 shadow-sm">
+        <div class="flex items-end justify-between gap-4">
             <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-brass">Search Surface</p>
-                <h2 class="mt-2 font-serif text-3xl text-ink">Explore the collection</h2>
+                <p class="section-kicker">Student picks</p>
+                <h2 class="mt-2 font-serif text-3xl text-midnight">Books that feel active right now</h2>
             </div>
-            <div class="rounded-full border border-black/10 bg-mist px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-ink/55">
-                1K+ catalog records
-            </div>
+            <a href="{% url 'search_results' %}" class="text-sm font-semibold text-midnight/60 transition hover:text-midnight">See all</a>
         </div>
-        <p class="mt-4 max-w-xl text-sm leading-7 text-ink/65">
-            Search the catalog using full-text indexing, browse high-availability inventory, or inspect a title in detail to see copies, holds, and active borrower activity.
-        </p>
-        <form action="{% url 'search_results' %}" method="GET" class="mt-8 grid gap-4 md:grid-cols-[1fr_auto_auto]">
-            <input type="text" name="q" placeholder="Try 'history', 'python', or 'ethics'" class="rounded-[1.5rem] border border-black/10 bg-white px-5 py-4 text-sm focus:border-pine focus:outline-none">
-            <select name="strategy" class="rounded-[1.5rem] border border-black/10 bg-white px-4 py-4 text-sm focus:border-pine focus:outline-none">
-                <option value="auto">Hybrid</option>
-                <option value="indexed">Indexed</option>
-                <option value="baseline">Baseline</option>
-            </select>
-            <button type="submit" class="rounded-[1.5rem] bg-ink px-5 py-4 text-sm font-semibold text-white transition hover:bg-pine">Search</button>
-        </form>
+        <div class="mt-6 grid gap-4 md:grid-cols-2">
+            {% for book in student_picks %}
+            <a href="{% url 'book_page' book.id %}" class="soft-card rounded-[1.6rem] bg-white p-4 shadow-sm">
+                <div class="flex gap-4">
+                    <div class="h-36 w-24 shrink-0 overflow-hidden rounded-[1.2rem] bg-oat">
+                        {% if book.image_url %}
+                        <img src="{{ book.image_url }}" alt="{{ book.title }}" class="h-full w-full object-cover">
+                        {% endif %}
+                    </div>
+                    <div class="min-w-0">
+                        <p class="section-kicker">{{ book.course_tag }}</p>
+                        <h3 class="mt-2 font-serif text-2xl leading-tight text-midnight">{{ book.title }}</h3>
+                        <p class="mt-2 text-sm text-midnight/60">{{ book.author }}</p>
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            {% for tag in book.quick_tags %}
+                            <span class="chip">{{ tag }}</span>
+                            {% endfor %}
+                        </div>
+                        <p class="mt-3 line-clamp-3 text-sm leading-6 text-midnight/58">{{ book.summary|default:book.description }}</p>
+                    </div>
+                </div>
+            </a>
+            {% empty %}
+            <div class="rounded-[1.6rem] border border-dashed border-black/10 bg-white/70 p-8 text-midnight/50 md:col-span-2">Import books to populate the student picks shelf.</div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="mt-8 grid gap-6 lg:grid-cols-3">
+    <div class="rounded-[1.7rem] shell-panel p-6 shadow-sm">
+        <p class="section-kicker">Why Bentley feels different</p>
+        <h3 class="mt-2 font-serif text-2xl text-midnight">Built around classes, not just catalog fields</h3>
+        <p class="mt-3 text-sm leading-6 text-midnight/62">Students can start from actual school intent like history research, English seminar reading, fast fiction, or CS/AI curiosity.</p>
+    </div>
+    <div class="rounded-[1.7rem] shell-panel p-6 shadow-sm">
+        <p class="section-kicker">Real metadata</p>
+        <h3 class="mt-2 font-serif text-2xl text-midnight">Scan, recognize, and place books fast</h3>
+        <p class="mt-3 text-sm leading-6 text-midnight/62">ISBN lookup and real book metadata make the library feel credible from the first interaction instead of like seeded dummy software.</p>
+    </div>
+    <div class="rounded-[1.7rem] shell-panel p-6 shadow-sm">
+        <p class="section-kicker">Grounded AI</p>
+        <h3 class="mt-2 font-serif text-2xl text-midnight">Recommendations tied to the actual shelf</h3>
+        <p class="mt-3 text-sm leading-6 text-midnight/62">The concierge interprets intent, retrieves from the real catalog, and reranks for fit plus availability instead of inventing books.</p>
+    </div>
+</section>
+
+<section class="mt-8 grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+    <div class="rounded-[2rem] shell-panel p-8 shadow-sm">
+        <div class="flex items-end justify-between gap-4">
+            <div>
+                <p class="section-kicker">Available now</p>
+                <h2 class="mt-2 font-serif text-3xl text-midnight">Skip the waitlist</h2>
+            </div>
+            <a href="{% url 'search_results' %}?available_quantity=1" class="text-sm font-semibold text-midnight/60 transition hover:text-midnight">Browse ready copies</a>
+        </div>
+        <div class="mt-6 grid gap-4 sm:grid-cols-2">
+            {% for book in available_now %}
+            <a href="{% url 'book_page' book.id %}" class="soft-card rounded-[1.5rem] bg-white p-5 shadow-sm">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="section-kicker">{{ book.course_tag }}</p>
+                        <h3 class="mt-2 font-serif text-2xl text-midnight">{{ book.title }}</h3>
+                        <p class="mt-2 text-sm text-midnight/60">{{ book.author }}</p>
+                    </div>
+                    <span class="rounded-full bg-sage px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-forest">{{ book.available_quantity }} ready</span>
+                </div>
+                <div class="mt-4 flex flex-wrap gap-2">
+                    {% for tag in book.quick_tags %}
+                    <span class="chip">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+            </a>
+            {% empty %}
+            <div class="rounded-[1.5rem] border border-dashed border-black/10 bg-white/70 p-8 text-midnight/50 sm:col-span-2">No ready-to-borrow titles are currently surfaced.</div>
+            {% endfor %}
+        </div>
     </div>
 
-    <div class="rounded-[2rem] border border-black/5 bg-ink p-8 text-white shadow-haze">
-        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-white/55">System Traits</p>
-        <h2 class="mt-2 font-serif text-3xl">Structured library workflows with a lighter footprint.</h2>
-        <div class="mt-8 grid gap-4 sm:grid-cols-2">
-            <div class="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
-                <p class="font-semibold">Role-aware accounts</p>
-                <p class="mt-2 text-sm leading-6 text-white/70">Patrons, librarians, and staff operate through the same catalog with different permissions and workflows.</p>
-            </div>
-            <div class="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
-                <p class="font-semibold">Copy-level circulation</p>
-                <p class="mt-2 text-sm leading-6 text-white/70">Inventory is tracked per copy, not just per title, making holds and returns more realistic.</p>
-            </div>
-            <div class="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
-                <p class="font-semibold">Search benchmarking</p>
-                <p class="mt-2 text-sm leading-6 text-white/70">Baseline, indexed, and hybrid strategies can be compared directly through the application.</p>
-            </div>
-            <div class="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
-                <p class="font-semibold">PostgreSQL-backed</p>
-                <p class="mt-2 text-sm leading-6 text-white/70">Catalog search and workflow data are structured for relational integrity and future scale-up.</p>
+    <div class="rounded-[2rem] shell-dark p-8 text-white shadow-cinematic">
+        <p class="section-kicker !text-white/45">This week at Bentley</p>
+        <h2 class="mt-2 font-serif text-3xl">News, momentum, and what is trending</h2>
+        <div class="mt-6 space-y-4">
+            {% for item in library_news %}
+            <article class="rounded-[1.5rem] border border-white/10 bg-white/6 p-5">
+                <div class="flex items-center justify-between gap-3">
+                    <h3 class="font-semibold text-white">{{ item.title }}</h3>
+                    <span class="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/60">{{ item.tag }}</span>
+                </div>
+                <p class="mt-3 text-sm leading-6 text-white/72">{{ item.body }}</p>
+            </article>
+            {% endfor %}
+        </div>
+        <div class="mt-6 rounded-[1.5rem] border border-white/10 bg-white/6 p-5">
+            <p class="section-kicker !text-white/45">Trending shelves</p>
+            <div class="mt-4 flex flex-wrap gap-2">
+                {% for genre in trending_genres %}
+                <a href="{% url 'search_results' %}?q={{ genre.name|urlencode }}" class="rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-white/10">
+                    {{ genre.name }} <span class="text-white/40">· {{ genre.count }}</span>
+                </a>
+                {% endfor %}
             </div>
         </div>
     </div>
 </section>
 
-<section class="mt-10">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-brass">Featured Catalog Titles</p>
-            <h2 class="mt-2 font-serif text-3xl text-ink">A few books from the collection</h2>
-        </div>
-        <a href="{% url 'search_results' %}" class="text-sm font-semibold text-ink/65 transition hover:text-ink">View full catalog</a>
-    </div>
-    <div class="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        {% for book in featured_books %}
-        <a href="{% url 'book_page' book.id %}" class="reveal-card rounded-[1.75rem] border border-black/5 bg-white/78 p-6 shadow-sm">
-            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-ink/40">{{ book.genre|default:"General Collection" }}</p>
-            <h3 class="mt-3 font-serif text-2xl leading-tight text-ink">{{ book.title }}</h3>
-            <p class="mt-3 text-sm text-ink/65">{{ book.author }}</p>
-            <div class="mt-6 flex items-center justify-between text-sm text-ink/60">
-                <span>{{ book.publisher }}</span>
-                <span>{{ book.available_quantity }}/{{ book.quantity }} available</span>
+<section class="mt-8 grid gap-6 xl:grid-cols-[1fr_1fr]">
+    <div class="rounded-[2rem] shell-panel p-8 shadow-sm">
+        <div class="flex items-end justify-between gap-4">
+            <div>
+                <p class="section-kicker">Fresh on the shelf</p>
+                <h2 class="mt-2 font-serif text-3xl text-midnight">Recently surfaced titles</h2>
             </div>
-        </a>
-        {% empty %}
-        <div class="rounded-[1.75rem] border border-dashed border-black/10 bg-white/60 p-8 text-ink/55">
-            Seed the catalog to show featured titles here.
+            <a href="{% url 'search_results' %}" class="text-sm font-semibold text-midnight/60 transition hover:text-midnight">Full catalog</a>
         </div>
-        {% endfor %}
+        <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            {% for book in latest_books %}
+            <a href="{% url 'book_page' book.id %}" class="soft-card rounded-[1.4rem] bg-white p-3 shadow-sm">
+                <div class="aspect-[3/4] overflow-hidden rounded-[1rem] bg-oat">
+                    {% if book.image_url %}
+                    <img src="{{ book.image_url }}" alt="{{ book.title }}" class="h-full w-full object-cover">
+                    {% endif %}
+                </div>
+                <p class="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-midnight/40">{{ book.published_date|date:"Y" }}</p>
+                <h3 class="mt-2 font-serif text-lg leading-tight text-midnight">{{ book.title }}</h3>
+                <p class="mt-1 text-sm text-midnight/58">{{ book.author }}</p>
+            </a>
+            {% empty %}
+            <div class="rounded-[1.5rem] border border-dashed border-black/10 bg-white/70 p-8 text-midnight/50 sm:col-span-2 lg:col-span-5">No titles yet. Import books to fill the recent shelf.</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="rounded-[2rem] shell-panel p-8 shadow-sm">
+        <p class="section-kicker">Most wanted</p>
+        <h2 class="mt-2 font-serif text-3xl text-midnight">Books students are already lining up for</h2>
+        <div class="mt-6 space-y-4">
+            {% for book in most_wanted %}
+            <a href="{% url 'book_page' book.id %}" class="soft-card block rounded-[1.5rem] bg-white p-5 shadow-sm">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="font-semibold text-midnight">{{ book.title }}</p>
+                        <p class="mt-1 text-sm text-midnight/60">{{ book.author }}</p>
+                    </div>
+                    <span class="rounded-full bg-oat px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-midnight/60">{{ book.wait_label }}</span>
+                </div>
+                <div class="mt-3 flex flex-wrap gap-2">
+                    {% for tag in book.quick_tags %}
+                    <span class="chip">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+            </a>
+            {% empty %}
+            <div class="rounded-[1.5rem] border border-dashed border-black/10 bg-white/70 p-8 text-midnight/50">Once students start placing holds, this section will highlight demand across the collection.</div>
+            {% endfor %}
+        </div>
     </div>
 </section>
+
+<script>
+    const bookUrlTemplate = "{% url 'book_page' 0 %}";
+
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) {
+            return parts.pop().split(";").shift();
+        }
+        return "";
+    }
+
+    function renderAiResult(payload) {
+        const container = document.getElementById("ai-results");
+        const books = (payload.books || []).slice(0, 3);
+        const cards = books.map((book) => `
+            <a href="${bookUrlTemplate.replace("0", book.id)}" class="block rounded-[1.2rem] border border-white/10 bg-white/6 p-4 transition hover:bg-white/10">
+                <p class="font-semibold text-white">${book.title}</p>
+                <p class="mt-1 text-sm text-white/65">${book.author}</p>
+                <p class="mt-2 text-sm leading-6 text-white/58">${book.reason || ""}</p>
+            </a>
+        `).join("");
+
+        container.innerHTML = `
+            <p class="section-kicker !text-white/45">${payload.mode || "Library guide"}</p>
+            <h3 class="mt-2 font-serif text-2xl text-white">${payload.headline || "Try these books"}</h3>
+            <p class="mt-2 text-sm leading-6 text-white/72">${payload.reason || ""}</p>
+            <p class="mt-3 text-sm text-white/72">Suggested search: <a class="font-semibold text-white underline decoration-white/20 underline-offset-4" href="{% url 'search_results' %}?q=${encodeURIComponent(payload.suggested_query || "")}">${payload.suggested_query || ""}</a></p>
+            <div class="mt-4 grid gap-3">${cards || '<p class="text-sm text-white/70">No matching books yet.</p>'}</div>
+        `;
+        container.classList.remove("hidden");
+    }
+
+    function renderIsbnResult(payload) {
+        const container = document.getElementById("isbn-result");
+        const image = payload.image_url
+            ? `<img src="${payload.image_url}" alt="${payload.title}" class="h-36 w-28 rounded-[1rem] object-cover shadow-lg">`
+            : `<div class="flex h-36 w-28 items-center justify-center rounded-[1rem] bg-oat text-xs font-semibold uppercase tracking-[0.18em] text-midnight/50">No cover</div>`;
+        const source = payload.source === "catalog" ? "In Bentley catalog" : "Live metadata";
+        const action = payload.book_url
+            ? `<a href="${payload.book_url}" class="primary-button mt-4">Open book page</a>`
+            : "";
+
+        container.innerHTML = `
+            <div class="flex gap-4">
+                <div class="shrink-0">${image}</div>
+                <div class="min-w-0">
+                    <p class="section-kicker">${payload.genre || "General"} · ${source}</p>
+                    <h3 class="mt-2 font-serif text-2xl text-midnight">${payload.title}</h3>
+                    <p class="mt-1 text-sm text-midnight/60">${payload.author || "Unknown Author"}</p>
+                    <p class="mt-3 text-sm leading-6 text-midnight/60">${payload.summary || payload.description || ""}</p>
+                    <div class="mt-4 flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-midnight/50">
+                        <span class="rounded-full bg-paper px-3 py-2">${payload.publisher || "Unknown Publisher"}</span>
+                        <span class="rounded-full bg-paper px-3 py-2">${payload.isbn || ""}</span>
+                    </div>
+                    ${action}
+                </div>
+            </div>
+        `;
+        container.classList.remove("hidden");
+    }
+
+    document.getElementById("ai-concierge-form")?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const prompt = document.getElementById("ai-prompt").value.trim();
+        const container = document.getElementById("ai-results");
+        if (!prompt) {
+            container.innerHTML = '<p class="text-sm text-white/70">Give the library a little context first.</p>';
+            container.classList.remove("hidden");
+            return;
+        }
+        container.innerHTML = '<p class="text-sm text-white/70">Looking through the shelves...</p>';
+        container.classList.remove("hidden");
+        const response = await fetch("{% url 'ai_concierge' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCookie("csrftoken"),
+            },
+            body: JSON.stringify({ prompt }),
+        });
+        const payload = await response.json();
+        renderAiResult(payload);
+    });
+
+    document.getElementById("isbn-lookup-form")?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const isbn = document.getElementById("isbn-input").value.trim();
+        const container = document.getElementById("isbn-result");
+        if (!isbn) {
+            container.innerHTML = '<p class="text-sm text-midnight/60">Paste an ISBN to look up a book.</p>';
+            container.classList.remove("hidden");
+            return;
+        }
+        container.innerHTML = '<p class="text-sm text-midnight/60">Checking the catalog and live metadata...</p>';
+        container.classList.remove("hidden");
+        const response = await fetch(`{% url 'isbn_lookup' %}?isbn=${encodeURIComponent(isbn)}`);
+        const payload = await response.json();
+        if (!response.ok) {
+            container.innerHTML = `<p class="text-sm text-midnight/60">${payload.error || "Book not found."}</p>`;
+            return;
+        }
+        renderIsbnResult(payload);
+    });
+</script>
 {% endblock %}
