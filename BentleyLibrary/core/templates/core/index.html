@@ -46,6 +46,9 @@
             <p class="mt-3 text-sm leading-6 text-white/72">
                 Try “I need a history source,” “give me a fast read,” or “something like The Hunger Games.”
             </p>
+            <p class="mt-3 text-xs uppercase tracking-[0.18em] text-white/45">
+                Recommendations only come from books already in the Bentley catalog.
+            </p>
             <form id="ai-concierge-form" class="mt-5 space-y-3">
                 {% csrf_token %}
                 <div class="flex flex-wrap gap-2">
@@ -54,6 +57,11 @@
                     <button type="button" data-ai-goal="research" class="ai-goal-toggle rounded-full border border-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/72">Research mode</button>
                 </div>
                 <textarea id="ai-prompt" rows="3" class="field-input !border-white/10 !bg-white/8 !text-white placeholder:!text-white/35" placeholder="I need a book for a history paper that is interesting and not too dry."></textarea>
+                <div class="flex flex-wrap gap-2 text-xs">
+                    <button type="button" data-ai-suggestion="I need a strong source for a history paper." class="ai-suggestion chip !border !border-white/10 !bg-white/6 !text-white/72">History paper</button>
+                    <button type="button" data-ai-suggestion="Give me a fast read I can finish this week." class="ai-suggestion chip !border !border-white/10 !bg-white/6 !text-white/72">Fast read</button>
+                    <button type="button" data-ai-suggestion="I want a book like The Hunger Games, but a little less dark." class="ai-suggestion chip !border !border-white/10 !bg-white/6 !text-white/72">Read-alike</button>
+                </div>
                 <button type="submit" class="rounded-full bg-white px-5 py-3 text-sm font-semibold text-midnight transition hover:bg-paper">Ask the library</button>
             </form>
             <div id="ai-results" class="mt-4 hidden rounded-[1.5rem] border border-white/10 bg-white/6 p-4"></div>
@@ -79,15 +87,15 @@
         <p class="section-kicker !text-white/45">Quick starts</p>
         <h2 class="mt-2 font-serif text-3xl">What students usually need first</h2>
         <div class="mt-6 grid gap-3">
-            <a href="{% url 'search_results' %}?q=history&strategy=indexed" class="rounded-[1.35rem] border border-white/10 bg-white/6 p-4 transition hover:bg-white/10">
-                <p class="font-semibold">Find a history paper source</p>
-                <p class="mt-1 text-sm text-white/68">A fast route into research-friendly books.</p>
-            </a>
-            <a href="{% url 'search_results' %}?q=young+adult&strategy=indexed" class="rounded-[1.35rem] border border-white/10 bg-white/6 p-4 transition hover:bg-white/10">
+                <a href="{% url 'search_results' %}?q=history&reading_goal=research" class="rounded-[1.35rem] border border-white/10 bg-white/6 p-4 transition hover:bg-white/10">
+                    <p class="font-semibold">Find a history paper source</p>
+                    <p class="mt-1 text-sm text-white/68">A fast route into research-friendly books.</p>
+                </a>
+            <a href="{% url 'search_results' %}?q=young+adult&reading_goal=reading" class="rounded-[1.35rem] border border-white/10 bg-white/6 p-4 transition hover:bg-white/10">
                 <p class="font-semibold">Grab a fast read</p>
                 <p class="mt-1 text-sm text-white/68">Good when you want something engaging without a huge lift.</p>
             </a>
-            <a href="{% url 'search_results' %}?q=computer+science&strategy=indexed" class="rounded-[1.35rem] border border-white/10 bg-white/6 p-4 transition hover:bg-white/10">
+            <a href="{% url 'search_results' %}?q=computer+science&reading_goal=research" class="rounded-[1.35rem] border border-white/10 bg-white/6 p-4 transition hover:bg-white/10">
                 <p class="font-semibold">Browse CS and AI books</p>
                 <p class="mt-1 text-sm text-white/68">Readable technical books and idea-driven nonfiction.</p>
             </a>
@@ -357,6 +365,13 @@
                 candidate.classList.toggle("border-white/15", !active);
                 candidate.classList.toggle("text-white/72", !active);
             });
+        });
+    });
+
+    document.querySelectorAll(".ai-suggestion").forEach((button) => {
+        button.addEventListener("click", () => {
+            document.getElementById("ai-prompt").value = button.dataset.aiSuggestion || "";
+            document.getElementById("ai-prompt").focus();
         });
     });
 

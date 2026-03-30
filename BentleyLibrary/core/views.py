@@ -487,10 +487,10 @@ def resource_view(request):
 
 def search_results(request):
     query = request.GET.get("q", "").strip()
-    strategy = request.GET.get("strategy", "auto").strip() or "auto"
     reading_goal = request.GET.get("reading_goal", "reading").strip().lower()
     if reading_goal not in {"reading", "research"}:
         reading_goal = "reading"
+    strategy = "indexed" if reading_goal == "research" else "auto"
     filters = {
         "published_date_start": request.GET.get("published_date_start", ""),
         "published_date_end": request.GET.get("published_date_end", ""),
@@ -530,8 +530,6 @@ def search_results(request):
         "audience": filters["audience"],
         "borrowed_books": active_loans,
         "borrowed_book_ids": borrowed_book_ids,
-        "search_strategy": response.strategy,
-        "search_elapsed_ms": round(response.latency_ms, 2),
         "reading_goal": reading_goal,
         "search_rescue": search_rescue(query, reading_goal=reading_goal) if query and not results else None,
     }
@@ -548,6 +546,10 @@ def book_page(request, book_id):
     holds = book.holds.filter(status__in=[HoldStatus.PENDING, HoldStatus.READY]).select_related(
         "requester"
     )
+    role = getattr(getattr(request.user, "library_profile", None), "role", LibraryRole.PATRON)
+    can_manage_loans = request.user.is_authenticated and (
+        role in ROLE_MANAGE_LOANS or request.user.has_perm("core.manage_loans")
+    )
     related_response = search_books(query=book.genre or book.author, strategy="indexed", limit=5)
     related_books = [
         enrich_book_card(candidate)
@@ -560,6 +562,9 @@ def book_page(request, book_id):
         "holds": holds,
         "copies": book.copies.order_by("barcode"),
         "related_books": related_books,
+        "can_manage_loans": can_manage_loans,
+        "active_loan_count": active_loans.count(),
+        "active_hold_count": holds.count(),
     }
     return render(request, BOOK_PAGE_TEMPLATE, context)
 
@@ -590,9 +595,19 @@ def account_overview(request):
     active_loans = request.user.loans.filter(
         status__in=[LoanStatus.ACTIVE, LoanStatus.OVERDUE]
     ).select_related("inventory", "copy")
+    due_soon_cutoff = timezone.now() + timedelta(days=3)
+    for loan in active_loans:
+        loan.is_due_soon = bool(
+            loan.status != LoanStatus.OVERDUE and loan.due_at and loan.due_at <= due_soon_cutoff
+        )
     hold_requests = request.user.hold_requests.filter(
         status__in=[HoldStatus.PENDING, HoldStatus.READY]
     ).select_related("inventory")
+    due_soon_count = sum(
+        1 for loan in active_loans
+        if getattr(loan, "is_due_soon", False)
+    )
+    overdue_count = sum(1 for loan in active_loans if loan.status == LoanStatus.OVERDUE)
     recommended = []
     interest_terms = [hold.inventory.genre for hold in hold_requests[:2]] or [
         loan.inventory.genre for loan in active_loans[:2]
@@ -610,6 +625,8 @@ def account_overview(request):
         "hold_requests": hold_requests,
         "can_manage_loans": can_manage_loans,
         "recommended_books": recommended,
+        "due_soon_count": due_soon_count,
+        "overdue_count": overdue_count,
     }
     return render(request, ACCOUNT_TEMPLATE, context)
 

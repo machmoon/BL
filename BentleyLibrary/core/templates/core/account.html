@@ -16,7 +16,7 @@
                 {% endif %}
             </div>
             {% if profile %}
-            <div class="grid gap-3 sm:grid-cols-2">
+            <div class="grid gap-3 sm:grid-cols-4">
                 <div class="rounded-[1.4rem] bg-white px-5 py-4 shadow-sm">
                     <p class="section-kicker">Loan limit</p>
                     <p class="mt-2 font-serif text-3xl text-midnight">{{ profile.max_active_loans }}</p>
@@ -24,6 +24,14 @@
                 <div class="rounded-[1.4rem] bg-white px-5 py-4 shadow-sm">
                     <p class="section-kicker">Status</p>
                     <p class="mt-2 text-sm font-semibold text-midnight">{% if profile.is_email_verified %}Verified{% else %}Pending verification{% endif %}</p>
+                </div>
+                <div class="rounded-[1.4rem] bg-white px-5 py-4 shadow-sm">
+                    <p class="section-kicker">Due soon</p>
+                    <p class="mt-2 font-serif text-3xl text-midnight">{{ due_soon_count }}</p>
+                </div>
+                <div class="rounded-[1.4rem] bg-white px-5 py-4 shadow-sm">
+                    <p class="section-kicker">Overdue</p>
+                    <p class="mt-2 font-serif text-3xl text-midnight">{{ overdue_count }}</p>
                 </div>
             </div>
             {% endif %}
@@ -45,7 +53,9 @@
                             <p class="mt-2 text-sm text-midnight/60">Copy {{ loan.copy.barcode }}</p>
                             <p class="mt-2 text-sm text-midnight/50">{{ loan.inventory.author }}</p>
                         </div>
-                        <span class="rounded-full bg-sage px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-forest">Due {{ loan.due_at|date:"M j" }}</span>
+                        <span class="rounded-full {% if loan.status == 'overdue' %}bg-coral/15 text-coral{% elif loan.is_due_soon %}bg-oat text-midnight/70{% else %}bg-sage text-forest{% endif %} px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]">
+                            {% if loan.status == 'overdue' %}Overdue{% else %}Due {{ loan.due_at|date:"M j" }}{% endif %}
+                        </span>
                     </div>
                     <a href="{% url 'book_page' loan.inventory.id %}" class="mt-4 inline-flex text-sm font-semibold text-midnight/70 transition hover:text-midnight">Open book details</a>
                 </div>
@@ -68,6 +78,9 @@
                     <p class="font-serif text-2xl text-midnight">{{ hold.inventory.title }}</p>
                     <p class="mt-2 text-sm capitalize text-midnight/60">Status: {{ hold.status }}</p>
                     <p class="mt-2 text-sm text-midnight/50">{{ hold.inventory.author }}</p>
+                    {% if forloop.counter %}
+                    <p class="mt-2 text-sm text-midnight/50">Queue position {{ forloop.counter }}</p>
+                    {% endif %}
                     <a href="{% url 'book_page' hold.inventory.id %}" class="mt-4 inline-flex text-sm font-semibold text-midnight/70 transition hover:text-midnight">Open hold details</a>
                 </div>
                 {% empty %}

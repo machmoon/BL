@@ -219,7 +219,9 @@
                             <a href="{% url 'search_results' %}" class="rounded-2xl px-3 py-2 hover:bg-paper">Catalog</a>
                             <a href="{% url 'advanced_search_results' %}" class="rounded-2xl px-3 py-2 hover:bg-paper">Advanced Search</a>
                             <a href="{% url 'resource' %}" class="rounded-2xl px-3 py-2 hover:bg-paper">Resources</a>
+                            {% if can_manage_loans %}
                             <a href="{% url 'checkin' %}" class="rounded-2xl px-3 py-2 hover:bg-paper">Check In</a>
+                            {% endif %}
                             {% if user.is_authenticated %}
                             <a href="{% url 'account_overview' %}" class="rounded-2xl px-3 py-2 hover:bg-paper">My Account</a>
                             {% endif %}
@@ -231,7 +233,9 @@
                     <a href="{% url 'search_results' %}" class="rounded-full px-4 py-2 text-sm font-semibold text-midnight/70 transition hover:bg-white hover:text-midnight">Catalog</a>
                     <a href="{% url 'advanced_search_results' %}" class="rounded-full px-4 py-2 text-sm font-semibold text-midnight/70 transition hover:bg-white hover:text-midnight">Advanced Search</a>
                     <a href="{% url 'resource' %}" class="rounded-full px-4 py-2 text-sm font-semibold text-midnight/70 transition hover:bg-white hover:text-midnight">Resources</a>
+                    {% if can_manage_loans %}
                     <a href="{% url 'checkin' %}" class="rounded-full px-4 py-2 text-sm font-semibold text-midnight/70 transition hover:bg-white hover:text-midnight">Check In</a>
+                    {% endif %}
                     {% if user.is_authenticated %}
                     <a href="{% url 'account_overview' %}" class="rounded-full px-4 py-2 text-sm font-semibold text-midnight/70 transition hover:bg-white hover:text-midnight">My Account</a>
                     {% endif %}
@@ -240,14 +244,9 @@
 
             <div class="mt-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                 <form action="{% url 'search_results' %}" method="GET" class="flex flex-col gap-3 md:flex-row">
+                    <input type="hidden" name="reading_goal" value="{{ reading_goal|default:'reading' }}">
                     <div class="flex items-center overflow-hidden rounded-[1.6rem] border border-black/10 bg-white/88 shadow-sm">
-                        <input type="text" name="q" placeholder="Search class books, authors, ISBNs, research topics" class="w-full min-w-0 bg-transparent px-5 py-3 text-sm text-midnight placeholder:text-midnight/35 focus:outline-none md:w-96" value="{{ query|default:'' }}">
-                        <div class="h-8 w-px bg-black/10"></div>
-                        <select name="strategy" class="bg-transparent px-4 py-3 text-sm text-midnight/70 focus:outline-none">
-                            <option value="auto" {% if search_strategy == 'hybrid' or not search_strategy %}selected{% endif %}>Hybrid</option>
-                            <option value="indexed" {% if search_strategy == 'indexed' %}selected{% endif %}>Indexed</option>
-                            <option value="baseline" {% if search_strategy == 'baseline' %}selected{% endif %}>Baseline</option>
-                        </select>
+                        <input type="text" name="q" placeholder="Search class books, authors, ISBNs, research topics" class="w-full min-w-0 bg-transparent px-5 py-3 text-sm text-midnight placeholder:text-midnight/35 focus:outline-none md:w-[32rem]" value="{{ query|default:'' }}">
                     </div>
                     <button type="submit" class="primary-button">Search</button>
                 </form>

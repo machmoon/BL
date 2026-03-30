@@ -77,10 +77,13 @@
             <div class="mt-4 rounded-[1.4rem] border border-white/10 bg-white/6 p-4">
                 <p class="section-kicker !text-white/45">Student-facing status</p>
                 <p class="mt-2 text-lg font-semibold">{{ book.wait_label }}</p>
+                <p class="mt-2 text-sm text-white/68">{{ active_loan_count }} active loan{{ active_loan_count|pluralize }} and {{ active_hold_count }} hold{{ active_hold_count|pluralize }} in queue.</p>
             </div>
             <div class="mt-6 grid gap-3">
                 <a href="{% url 'checkout' book.isbn %}" class="rounded-full bg-white px-4 py-3 text-center text-sm font-semibold text-midnight transition hover:bg-paper">{{ book.primary_cta }}</a>
+                {% if can_manage_loans %}
                 <a href="{% url 'checkin' %}" class="rounded-full border border-white/10 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-white/8">Check in</a>
+                {% endif %}
                 {% if user.is_authenticated %}
                 <form method="post" action="{% url 'place_hold' book.id %}">
                     {% csrf_token %}
@@ -91,23 +94,22 @@
         </div>
 
         <div class="rounded-[2rem] shell-panel p-6 shadow-sm">
-            <p class="section-kicker">Active loans</p>
-            <ul class="mt-4 space-y-3 text-sm text-midnight/68">
-                {% for loan in borrowed_books %}
-                <li class="rounded-[1.2rem] bg-white p-4 shadow-sm">
-                    <p class="font-semibold text-midnight">{{ loan.borrower_email_snapshot }}</p>
-                    {% if loan.copy %}
-                    <p class="mt-1 text-xs uppercase tracking-[0.16em] text-midnight/45">{{ loan.copy.barcode }}</p>
-                    {% endif %}
-                </li>
-                {% empty %}
-                <li class="rounded-[1.2rem] border border-dashed border-black/10 p-4 text-midnight/50">No active loans.</li>
-                {% endfor %}
-            </ul>
+            <p class="section-kicker">Demand snapshot</p>
+            <div class="mt-4 grid gap-3 text-sm text-midnight/68">
+                <div class="rounded-[1.2rem] bg-white p-4 shadow-sm">
+                    <p class="font-semibold text-midnight">{{ active_loan_count }} active loan{{ active_loan_count|pluralize }}</p>
+                    <p class="mt-1 text-midnight/55">This title is currently circulating across the Bentley collection.</p>
+                </div>
+                <div class="rounded-[1.2rem] bg-white p-4 shadow-sm">
+                    <p class="font-semibold text-midnight">{{ active_hold_count }} active hold{{ active_hold_count|pluralize }}</p>
+                    <p class="mt-1 text-midnight/55">If this book is unavailable, a hold is the best next step.</p>
+                </div>
+            </div>
         </div>
 
+        {% if can_manage_loans %}
         <div class="rounded-[2rem] shell-panel p-6 shadow-sm">
-            <p class="section-kicker">Holds and copies</p>
+            <p class="section-kicker">Staff circulation</p>
             <div class="mt-4 space-y-4">
                 <div>
                     <p class="mb-2 text-sm font-semibold text-midnight">Hold queue</p>
@@ -134,6 +136,7 @@
                 </div>
             </div>
         </div>
+        {% endif %}
 
         <div class="rounded-[2rem] shell-panel p-6 shadow-sm">
             <p class="section-kicker">You might also want</p>

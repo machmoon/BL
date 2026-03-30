@@ -264,7 +264,7 @@ class SearchAndBrowseTests(LibraryViewTestCase):
         self.assertContains(response, "Available Book")
         self.assertNotContains(response, "Unavailable Book")
 
-    def test_book_page_displays_borrower_information(self):
+    def test_book_page_hides_borrower_information_from_students(self):
         book = self.create_book(quantity=2, available_quantity=1)
         self.create_log(book, borrower_email="reader@example.com")
 
@@ -272,7 +272,8 @@ class SearchAndBrowseTests(LibraryViewTestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "core/book_page.html")
-        self.assertContains(response, "reader@example.com")
+        self.assertContains(response, "Demand snapshot")
+        self.assertNotContains(response, "reader@example.com")
 
     def test_book_page_missing_book_returns_404(self):
         response = self.client.get(reverse("book_page", args=[99999]))
